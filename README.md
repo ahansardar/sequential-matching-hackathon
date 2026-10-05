@@ -10,6 +10,9 @@ Build a policy that decides who to introduce, when to wait and what to clarify, 
 > available through the `upstream` Git remote so rule corrections can be reviewed
 > separately from team work.
 
+The submission-ready Round 1 documentation is in
+[`round1/`](round1/README.md).
+
 ## Start here
 
 1. Read the [final problem statement](PROBLEM_STATEMENT.md) or [download the PDF](docs/PROBLEM_STATEMENT.pdf).
