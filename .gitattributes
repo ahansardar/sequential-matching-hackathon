@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# These files are covered by byte-level release checksums.
+data/** text eol=lf
+*.jsonl text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+
+# Keep generated and binary artifacts byte-for-byte.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.zip binary

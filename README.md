@@ -4,6 +4,12 @@
 
 Build a policy that decides who to introduce, when to wait and what to clarify, using incomplete reciprocal preferences and delayed feedback. Every person, conversation and outcome in this kit is synthetic.
 
+> **Team workspace:** Start with [CONTRIBUTING.md](CONTRIBUTING.md), the
+> [two-person workflow](docs/TEAM_WORKFLOW.md) and the
+> [technical analysis](docs/TECHNICAL_ANALYSIS.md). The official starter remains
+> available through the `upstream` Git remote so rule corrections can be reviewed
+> separately from team work.
+
 ## Start here
 
 1. Read the [final problem statement](PROBLEM_STATEMENT.md) or [download the PDF](docs/PROBLEM_STATEMENT.pdf).
