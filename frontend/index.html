@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local research dashboard for the CAVIA sequential matching policy.">
+  <title>CAVIA Evaluation Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="#overview" aria-label="CAVIA Evaluation Studio home">
+      <span class="brand-mark">C</span>
+      <span><strong>CAVIA</strong><small>Evaluation Studio</small></span>
+    </a>
+    <nav aria-label="Dashboard sections">
+      <button class="nav-link active" data-view="overview">Overview</button>
+      <button class="nav-link" data-view="dataset">Dataset</button>
+      <button class="nav-link" data-view="decisions">Decisions</button>
+      <button class="nav-link" data-view="experiments">Experiments</button>
+      <button class="nav-link" data-view="method">Method</button>
+    </nav>
+    <div class="run-state"><span></span> Local evidence</div>
+  </header>
+
+  <main id="app">
+    <section class="view active" id="view-overview" aria-labelledby="overview-title">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Sequential reciprocal matching / public simulator</p>
+          <h1 id="overview-title">See every decision.<br>Question every score.</h1>
+          <p class="hero-copy">A visual workbench for the synthetic populations, clarification choices, feasible graph, daily allocation and matched-seed experiments behind CAVIA.</p>
+        </div>
+        <div class="hero-note">
+          <span>Evidence boundary</span>
+          <p>This dashboard contains synthetic public data and local simulator results. It does not describe real people or real-world relationship outcomes.</p>
+        </div>
+      </div>
+
+      <div class="metric-strip" id="overview-metrics"></div>
+
+      <div class="split-layout overview-panels">
+        <article class="panel panel-dark">
+          <div class="panel-heading">
+            <div><span class="section-index">01</span><h2>Scenario scorecard</h2></div>
+            <select id="overview-method" aria-label="Choose experiment method"></select>
+          </div>
+          <div id="scenario-bars" class="scenario-bars"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading">
+            <div><span class="section-index">02</span><h2>Outcome funnel</h2></div>
+          </div>
+          <div id="outcome-funnel" class="funnel"></div>
+          <p class="panel-footnote">Aggregated across the selected method's public experiment episodes.</p>
+        </article>
+      </div>
+
+      <article class="finding-band">
+        <span>Current finding</span>
+        <p id="current-finding">Loading experiment evidence…</p>
+      </article>
+    </section>
+
+    <section class="view" id="view-dataset" aria-labelledby="dataset-title">
+      <div class="section-intro">
+        <div><p class="eyebrow">Observable snapshots only</p><h1 id="dataset-title">Dataset explorer</h1></div>
+        <p>Inspect all 2,000 synthetic profiles without exposing hidden simulator truth. Select a pool, filter the table, and open any member for observed fields and missingness.</p>
+      </div>
+      <div class="toolbar">
+        <label>Pool<select id="pool-select"></select></label>
+        <label>Search<input id="member-search" type="search" placeholder="ID, zone or gender"></label>
+        <label>Status<select id="availability-filter"><option value="all">All members</option><option value="available">Available</option><option value="unavailable">Unavailable</option></select></label>
+      </div>
+      <div class="dataset-summary" id="dataset-summary"></div>
+      <div class="table-shell">
+        <table>
+          <thead><tr><th>Member</th><th>Age</th><th>Gender</th><th>Zone</th><th>Availability</th><th>Hard known</th><th>Soft known</th></tr></thead>
+          <tbody id="member-rows"></tbody>
+        </table>
+      </div>
+      <div class="pagination"><span id="member-count"></span><button id="show-more-members">Show 50 more</button></div>
+    </section>
+
+    <section class="view" id="view-decisions" aria-labelledby="decisions-title">
+      <div class="section-intro">
+        <div><p class="eyebrow">Day-30 snapshot inspection</p><h1 id="decisions-title">Decision inspector</h1></div>
+        <p>Follow the ask phase and match phase using the same observable state the policy receives.</p>
+      </div>
+      <div class="decision-controls"><label>Pool<select id="decision-pool"></select></label><div id="decision-day" class="day-stamp"></div></div>
+      <div class="decision-flow" aria-label="CAVIA decision sequence">
+        <div><span>1</span><strong>Filter</strong><small>Remove known hard failures</small></div>
+        <i>→</i><div><span>2</span><strong>Clarify</strong><small>Rank blocked edges</small></div>
+        <i>→</i><div><span>3</span><strong>Score</strong><small>Value feasible edges</small></div>
+        <i>→</i><div><span>4</span><strong>Allocate</strong><small>Select non-overlapping pairs</small></div>
+      </div>
+      <div class="decision-grid">
+        <article class="panel"><div class="panel-heading"><div><span class="section-index">Ask</span><h2>Clarification queue</h2></div><span class="pill" id="ask-budget"></span></div><div id="ask-list" class="ask-list"></div></article>
+        <article class="panel"><div class="panel-heading"><div><span class="section-index">Match</span><h2>Selected batch</h2></div><span class="pill" id="pair-count"></span></div><div id="pair-list" class="pair-list"></div></article>
+      </div>
+      <article class="panel edge-panel">
+        <div class="panel-heading"><div><span class="section-index">Graph</span><h2>Top feasible edges</h2></div><span class="legend"><b></b>Selected edge</span></div>
+        <div class="table-shell"><table><thead><tr><th>Pair</th><th>Zones</th><th>CAVIA score</th><th>Decision</th></tr></thead><tbody id="edge-rows"></tbody></table></div>
+      </article>
+    </section>
+
+    <section class="view" id="view-experiments" aria-labelledby="experiments-title">
+      <div class="section-intro">
+        <div><p class="eyebrow">Matched seeds 101–103 / six scenarios</p><h1 id="experiments-title">Experiment room</h1></div>
+        <p>Compare the full prototype, supplied greedy baseline, and component ablations. Values are preliminary public-simulator evidence.</p>
+      </div>
+      <div class="experiment-note"><strong>Read this first.</strong> Eighteen public episodes are enough to detect failures, not enough to guarantee private-evaluation performance.</div>
+      <div class="table-shell comparison-shell"><table><thead><tr><th>Method</th><th>Primary score</th><th>Coverage</th><th>Mutual / 100</th><th>Ask cost</th><th>Episodes</th></tr></thead><tbody id="method-rows"></tbody></table></div>
+      <article class="panel heatmap-panel"><div class="panel-heading"><div><span class="section-index">Scenario</span><h2>MSMI / 100 heatmap</h2></div></div><div id="scenario-heatmap" class="heatmap"></div></article>
+      <div class="evidence-columns">
+        <article><span class="evidence-label good">Where CAVIA helps</span><h3>Development, cold-start, shift and drift</h3><p>The prototype sometimes changes the selected path productively. On development seed 101, it produced two MSMI outcomes versus greedy’s one.</p></article>
+        <article><span class="evidence-label caution">Where it fails</span><h3>Sparse geography</h3><p>On sparse seed 102, targeted clarification missed the only successful path found by greedy. The question-value heuristic needs a sparse-supply safeguard.</p></article>
+        <article><span class="evidence-label neutral">What remains unproven</span><h3>Extra model complexity</h3><p>Removing uncertainty, feedback weighting, or local pair exchanges did not change the primary score on this seed set.</p></article>
+      </div>
+    </section>
+
+    <section class="view" id="view-method" aria-labelledby="method-title">
+      <div class="section-intro">
+        <div><p class="eyebrow">Constraint-Aware Value-of-Information Allocation</p><h1 id="method-title">How CAVIA works</h1></div>
+        <p>An explainable, dependency-free policy. Every soft decision happens after reciprocal hard feasibility.</p>
+      </div>
+      <div class="method-stack">
+        <article><b>01</b><div><h2>Protect the boundary</h2><p>Known hard failures remove an edge. Missing hard information blocks it. A soft score never turns an invalid pair into a valid one.</p></div></article>
+        <article><b>02</b><div><h2>Spend questions where they can change the graph</h2><p>Blocked edges, candidate scarcity, resolvability and waiting time create an observable value-of-information proxy.</p></div></article>
+        <article><b>03</b><div><h2>Score only feasible pairs</h2><p>Observed soft agreement, scarcity, waiting, mature feedback and uncertainty form the edge value. Missing values never count as agreement.</p></div></article>
+        <article><b>04</b><div><h2>Improve the complete batch</h2><p>Greedy matching is followed by deterministic two-edge exchanges. The batch remains feasible and non-overlapping.</p></div></article>
+        <article><b>05</b><div><h2>Learn only from mature evidence</h2><p>Responses, dates and MSMI remain separate. Later-observed profile fields cannot leak into earlier assignments.</p></div></article>
+      </div>
+      <div class="contract-box"><strong>Evaluation contract</strong><div><span>Observable JSON only</span><span>Offline CPU</span><span>10 seconds per call</span><span>No hidden truth</span><span>Deterministic output</span></div></div>
+    </section>
+  </main>
+
+  <aside class="member-drawer" id="member-drawer" aria-hidden="true">
+    <button class="drawer-close" id="drawer-close" aria-label="Close member details">×</button>
+    <div id="drawer-content"></div>
+  </aside>
+  <div class="drawer-scrim" id="drawer-scrim"></div>
+
+  <footer><span>CAVIA Evaluation Studio</span><span>Public synthetic data · local research tool</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>

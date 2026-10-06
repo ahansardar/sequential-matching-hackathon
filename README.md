@@ -43,6 +43,8 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/SUBMISSION.md](docs/SUBMISSION.md) | Complete research and build submission instructions |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
+| [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Team policy algorithm and ablation modes |
+| [frontend/](frontend/) | Local visual studio for profiles, decisions, experiments and method explanation |
 | [examples/baseline_results/](examples/baseline_results/) | Checked reference runs for all three baselines |
 | [examples/REPORT_GUIDE.md](examples/REPORT_GUIDE.md) | What a complete participant technical report must cover |
 
@@ -57,6 +59,17 @@ python evaluate.py --baseline random --seeds 101,102,103 --variants all --output
 ```
 
 The full commands take longer than the one-episode quick start. Public variants are `development`, `sparse`, `cold_start`, `delayed`, `shift`, and `drift`. Use your own declared training seeds. Keep the supplied six training pools, two validation pools and two development-test pools disjoint. Day-30 snapshots are not observations from earlier decisions.
+
+### Open the evaluation studio
+
+Build the local, observable-only dashboard data and start the static site:
+
+```bash
+python frontend/build_dashboard_data.py
+python -m http.server 8080 --directory frontend
+```
+
+Open `http://localhost:8080`. The studio lets the team inspect all 2,000 public synthetic profiles, missing fields, clarification choices, feasible pair scores, selected daily batches and matched-seed experiment results. It deliberately excludes latent simulator truth and private evaluation data. See [frontend/README.md](frontend/README.md) for details.
 
 To check container execution after installing Docker:
 

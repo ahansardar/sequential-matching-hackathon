@@ -12,7 +12,8 @@ class RunnerTests(unittest.TestCase):
     def test_empty_request_through_real_process(self):
         state = Simulator(generate(42, 0)).observe()
         response, _ = invoke([sys.executable, 'policy.py'], {'schema_version': '1.0.0', 'phase': 'match', 'state': state, 'memory': None})
-        self.assertEqual(response, {'pairs': [], 'memory': {}})
+        self.assertEqual(response['pairs'], [])
+        self.assertIsInstance(response['memory'], dict)
 
     def test_malformed_output_rejected(self):
         for value in ({'pairs': []}, {'pairs': [['one']], 'memory': None}, {'asks': [{'member_id': 'one'}], 'memory': None}):

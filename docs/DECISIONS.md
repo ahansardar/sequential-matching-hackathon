@@ -30,3 +30,14 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   baselines.
 - **Reason:** These components directly target the observed weaknesses of the
   starter and support clear hypothesis-driven ablations.
+
+## D-004: Implement CAVIA as an auditable dependency-free prototype
+
+- **Status:** accepted for initial experiments
+- **Date:** 6 October 2026
+- **Decision:** Implement targeted hard-constraint asks, uncertainty-aware
+  reciprocal edge scoring, mature-feedback buckets and deterministic two-edge
+  allocation improvements using only the Python standard library.
+- **Reason:** This produces a complete testable policy while keeping inference
+  fast, offline and easy to audit. Exact global matching and trained weights
+  remain later experiments, not current claims.

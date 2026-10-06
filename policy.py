@@ -4,10 +4,13 @@ import itertools
 import json
 import random
 import sys
+from cavia import decide as decide_cavia
 from kit import baseline_asks, baseline_match, eligibility
 
 
 def decide(request, mode='greedy'):
+    if mode.startswith('cavia'):
+        return decide_cavia(request, mode)
     state = request['state']
     memory = request.get('memory') or {}
     if request['phase'] == 'ask':
@@ -32,7 +35,16 @@ def decide(request, mode='greedy'):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--baseline', choices=['greedy', 'no_asks', 'random'], default='greedy')
+    parser.add_argument(
+        '--baseline',
+        choices=[
+            'cavia', 'cavia_no_targeted_asks', 'cavia_greedy',
+            'cavia_no_uncertainty', 'cavia_no_feedback',
+            'cavia_targeted_baseline',
+            'greedy', 'no_asks', 'random',
+        ],
+        default='cavia',
+    )
     args = parser.parse_args()
     request = json.load(sys.stdin)
     print(json.dumps(decide(request, args.baseline), allow_nan=False))
