@@ -2,9 +2,9 @@
 
 ## Submission details
 
-- **Team name:** [TODO]
-- **Team members:** [TODO: member 1], [TODO: member 2]
-- **Contact email:** [TODO]
+- **Team name:** LuminaX
+- **Team members:** Enakshee Mondal, Ahan Sardar
+- **Contact email:** enakshee884@gmail.com,ahansardarvis@gmail.com
 - **Repository:** [TODO: add the public or shared link requested by the form]
 - **Document version:** 0.1
 - **Date:** 5 October 2026
