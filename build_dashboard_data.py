@@ -153,7 +153,7 @@ def build(output):
     experiments, raw_episodes = load_experiments(ROOT / "results")
     payload = {
         "meta": {
-            "title": "CAVIA Evaluation Studio",
+            "title": "Sequential Matching Data Viewer",
             "release": "1.0.0",
             "generatedFrom": "observable public snapshots and trusted local experiment outputs",
             "synthetic": True,

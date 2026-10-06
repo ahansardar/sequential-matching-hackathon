@@ -1,9 +1,16 @@
-const state = { data: null, view: 'overview', pool: 'public_01', decisionPool: 'public_01', visibleMembers: 50 };
-const fmt = (value, digits = 3) => Number(value ?? 0).toFixed(digits);
-const pct = value => `${Math.round(Number(value ?? 0) * 100)}%`;
-const shortId = id => id.replace('syn_', '').slice(0, 10);
-const title = text => text.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+const state = {
+  data: null,
+  pool: 'public_01',
+  outputPool: 'public_05',
+  visibleMembers: 50,
+};
+
 const el = id => document.getElementById(id);
+const fmt = (value, digits = 3) => value === null || value === undefined ? '—' : Number(value).toFixed(digits);
+const pct = value => value === null || value === undefined ? '—' : `${Math.round(Number(value) * 100)}%`;
+const text = value => String(value ?? '').replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase());
+const shortId = id => String(id).replace('syn_', '');
+const emptyRow = (columns, message) => `<tr><td colspan="${columns}" class="empty">${message}</td></tr>`;
 
 async function load() {
   try {
@@ -13,134 +20,165 @@ async function load() {
     setup();
     renderAll();
   } catch (error) {
-    document.querySelector('main').innerHTML = `<article class="panel"><h1>Dashboard data is missing.</h1><p>Run <code>python frontend/build_dashboard_data.py</code>, then reload this page.</p><p>${error.message}</p></article>`;
+    document.querySelector('main').innerHTML = `<section class="card"><div class="empty"><h1>Dashboard data is missing</h1><p>Run <code>python frontend/build_dashboard_data.py</code> from the repository folder, then reload.</p><p>${error.message}</p></div></section>`;
   }
 }
 
 function setup() {
-  document.querySelectorAll('.nav-link').forEach(button => button.addEventListener('click', () => showView(button.dataset.view)));
-  const options = state.data.pools.map(pool => `<option value="${pool.id}">${pool.id}</option>`).join('');
-  el('pool-select').innerHTML = options;
-  el('decision-pool').innerHTML = options;
+  document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => showView(button.dataset.view)));
+  const poolOptions = state.data.pools.map(pool => `<option value="${pool.id}">${pool.id}</option>`).join('');
+  el('pool-select').innerHTML = poolOptions;
+  el('output-pool').innerHTML = poolOptions;
+  el('pool-select').value = state.pool;
+  el('output-pool').value = state.outputPool;
   el('pool-select').addEventListener('change', event => { state.pool = event.target.value; state.visibleMembers = 50; renderDataset(); });
-  el('decision-pool').addEventListener('change', event => { state.decisionPool = event.target.value; renderDecisions(); });
+  el('output-pool').addEventListener('change', event => { state.outputPool = event.target.value; renderOutput(); });
   el('member-search').addEventListener('input', () => { state.visibleMembers = 50; renderMembers(); });
   el('availability-filter').addEventListener('change', () => { state.visibleMembers = 50; renderMembers(); });
   el('show-more-members').addEventListener('click', () => { state.visibleMembers += 50; renderMembers(); });
   el('drawer-close').addEventListener('click', closeDrawer);
   el('drawer-scrim').addEventListener('click', closeDrawer);
-  el('overview-method').addEventListener('change', renderOverviewMethod);
+  el('run-select').addEventListener('change', renderRunDetails);
 }
 
 function showView(view) {
-  state.view = view;
   document.querySelectorAll('.view').forEach(node => node.classList.toggle('active', node.id === `view-${view}`));
-  document.querySelectorAll('.nav-link').forEach(node => node.classList.toggle('active', node.dataset.view === view));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelectorAll('.tab').forEach(node => node.classList.toggle('active', node.dataset.view === view));
+  window.scrollTo(0, 0);
 }
 
-function renderAll() { renderOverview(); renderDataset(); renderDecisions(); renderExperiments(); }
+function summaryItem(label, value, note = '') {
+  return `<div class="summary-item"><span>${label}</span><strong>${value}</strong>${note ? `<small>${note}</small>` : ''}</div>`;
+}
+
+function renderAll() {
+  renderOverview();
+  renderDataset();
+  renderOutput();
+  renderRuns();
+}
 
 function renderOverview() {
-  const cavia = state.data.experiments.find(method => method.id === 'cavia') || state.data.experiments[0];
-  const totalMembers = state.data.pools.reduce((sum, pool) => sum + pool.members, 0);
-  const totalIntroductions = state.data.pools.reduce((sum, pool) => sum + pool.introductions, 0);
-  el('overview-metrics').innerHTML = [
-    ['Synthetic members', totalMembers.toLocaleString(), '10 disjoint public pools'],
-    ['Historical introductions', totalIntroductions.toLocaleString(), 'Observable at day 30'],
-    ['Public episodes', cavia?.episodes ?? 0, 'Matched seeds and scenarios'],
-    ['CAVIA primary score', fmt(cavia?.primary), 'Preliminary—not a leaderboard score'],
-  ].map(([label, value, note]) => `<div class="metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`).join('');
-  el('overview-method').innerHTML = state.data.experiments.map(method => `<option value="${method.id}">${method.label}</option>`).join('');
-  renderOverviewMethod();
-  const greedy = state.data.experiments.find(method => method.id === 'greedy');
-  if (cavia && greedy) {
-    const delta = cavia.primary - greedy.primary;
-    el('current-finding').textContent = `Across ${cavia.episodes} matched public episodes, CAVIA scores ${fmt(cavia.primary)} versus greedy ${fmt(greedy.primary)} (${delta >= 0 ? '+' : ''}${fmt(delta)}). CAVIA helps in several scenarios but loses the sparse-geography success on seed 102.`;
-  }
-}
+  const members = state.data.pools.reduce((sum, pool) => sum + pool.members, 0);
+  const introductions = state.data.pools.reduce((sum, pool) => sum + pool.introductions, 0);
+  const feedback = state.data.pools.reduce((sum, pool) => sum + pool.feedback, 0);
+  const episodes = Math.max(0, ...state.data.experiments.map(run => run.episodes || 0));
+  el('overview-summary').innerHTML = [
+    summaryItem('Synthetic members', members.toLocaleString(), `${state.data.pools.length} disjoint pools`),
+    summaryItem('Historical introductions', introductions.toLocaleString(), 'Visible in public snapshots'),
+    summaryItem('Feedback events', feedback.toLocaleString(), 'Visible before new decisions'),
+    summaryItem('Episodes per saved run', episodes, `${state.data.scenarios.length} public scenarios`),
+  ].join('');
 
-function renderOverviewMethod() {
-  const method = state.data.experiments.find(item => item.id === el('overview-method').value) || state.data.experiments[0];
-  if (!method) return;
-  const maxScore = Math.max(1, ...Object.values(method.scenarios).map(row => row.msmi_per_100_arrived_members));
-  el('scenario-bars').innerHTML = state.data.scenarios.map(scenario => {
-    const value = method.scenarios[scenario]?.msmi_per_100_arrived_members ?? 0;
-    return `<div class="bar-row"><span>${title(scenario)}</span><div class="bar-track"><div class="bar-fill" style="width:${value / maxScore * 100}%"></div></div><strong>${fmt(value)}</strong></div>`;
-  }).join('');
+  el('pool-overview-rows').innerHTML = state.data.pools.map(pool => `<tr>
+    <td class="mono">${pool.id}</td><td>${pool.members}</td><td>${pool.available}</td><td>${pool.introductions}</td><td>${pool.feedback}</td><td>${pct(pool.hardObservedRate)}</td><td>${pct(pool.softObservedRate)}</td>
+  </tr>`).join('');
 
-  const episodes = getExperimentEpisodes(method.source);
-  const totals = episodes.reduce((acc, row) => {
-    acc.assignments += row.assignments || 0; acc.mutual += row.mutual_acceptances || 0; acc.dates += row.dates || 0; acc.msmi += row.mutual_second_meeting_intention || 0; return acc;
-  }, { assignments: 0, mutual: 0, dates: 0, msmi: 0 });
-  const max = Math.max(1, totals.assignments);
-  el('outcome-funnel').innerHTML = [['Assignments', totals.assignments], ['Mutual yes', totals.mutual], ['Dates', totals.dates], ['MSMI', totals.msmi]].map(([label, value]) => `<div class="funnel-row"><span>${label}</span><div class="funnel-track"><div class="funnel-fill" style="width:${value / max * 100}%"></div></div><strong>${value}</strong></div>`).join('');
-}
-
-function getExperimentEpisodes(source) {
-  const key = source.replace('.json', '');
-  return state.data.rawEpisodes?.[key] || [];
+  const runs = [...state.data.experiments].sort((a, b) => (b.primary ?? -1) - (a.primary ?? -1));
+  el('overview-run-rows').innerHTML = runs.map(run => `<tr>
+    <td>${run.label}<br><span class="muted mono">${run.source}</span></td><td>${fmt(run.primary)}</td><td>${pct(run.overall.coverage)}</td><td>${fmt(run.overall.mutual_acceptances_per_100, 2)}</td><td>${fmt(run.overall.ask_cost, 1)}</td><td>${run.episodes}</td><td class="${run.valid ? 'yes' : 'no'}">${run.valid ? 'Yes' : 'No'}</td>
+  </tr>`).join('') || emptyRow(7, 'No saved evaluation results found.');
 }
 
 function renderDataset() {
   const pool = state.data.pools.find(item => item.id === state.pool);
   el('dataset-summary').innerHTML = [
-    ['Snapshot day', pool.day], ['Members', pool.members], ['Available', pool.available], ['Hard fields observed', pct(pool.hardObservedRate)], ['Soft fields observed', pct(pool.softObservedRate)]
-  ].map(([label, value]) => `<div class="summary-cell"><small>${label}</small><strong>${value}</strong></div>`).join('');
+    summaryItem('Snapshot day', pool.day),
+    summaryItem('Members', pool.members),
+    summaryItem('Available', pool.available),
+    summaryItem('Hard fields known', pct(pool.hardObservedRate)),
+    summaryItem('Soft fields known', pct(pool.softObservedRate)),
+  ].join('');
   renderMembers();
 }
 
 function filteredMembers() {
-  const detail = state.data.poolDetails[state.pool];
   const query = el('member-search').value.trim().toLowerCase();
-  const filter = el('availability-filter').value;
-  return detail.members.filter(member => {
-    const matchesSearch = !query || [member.id, member.zone, member.gender].some(value => String(value).toLowerCase().includes(query));
-    const matchesAvailability = filter === 'all' || (filter === 'available' ? member.available : !member.available);
-    return matchesSearch && matchesAvailability;
+  const availability = el('availability-filter').value;
+  return state.data.poolDetails[state.pool].members.filter(member => {
+    const searchable = [member.id, member.zone, member.gender].join(' ').toLowerCase();
+    const matchesAvailability = availability === 'all' || (availability === 'available' ? member.available : !member.available);
+    return (!query || searchable.includes(query)) && matchesAvailability;
   });
 }
 
 function renderMembers() {
   const members = filteredMembers();
   const shown = members.slice(0, state.visibleMembers);
-  el('member-rows').innerHTML = shown.map(member => `<tr class="clickable" data-member="${member.id}"><td class="member-id">${shortId(member.id)}</td><td>${member.age}</td><td>${title(member.gender)}</td><td>${member.zone}</td><td><span class="status-dot ${member.available ? 'yes' : ''}"></span>${member.available ? 'Available' : 'Unavailable'}</td><td><span class="progress-mini"><b style="width:${member.hardKnown / member.hardTotal * 100}%"></b></span>${member.hardKnown}/${member.hardTotal}</td><td><span class="progress-mini"><b style="width:${member.softKnown / member.softTotal * 100}%"></b></span>${member.softKnown}/${member.softTotal}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No members match these filters.</td></tr>`;
-  el('member-count').textContent = `Showing ${Math.min(shown.length, members.length)} of ${members.length}`;
+  el('member-count').textContent = `Showing ${shown.length} of ${members.length}`;
+  el('member-rows').innerHTML = shown.map(member => `<tr class="clickable" data-member="${member.id}">
+    <td class="mono">${shortId(member.id)}</td><td>${member.age}</td><td>${text(member.gender)}</td><td>${member.zone}</td><td>${member.arrivalDay}</td><td class="${member.available ? 'yes' : 'muted'}">${member.available ? 'Yes' : 'No'}</td><td>${member.hardKnown} / ${member.hardTotal}</td><td>${member.softKnown} / ${member.softTotal}</td>
+  </tr>`).join('') || emptyRow(8, 'No members match the current filters.');
   el('show-more-members').hidden = shown.length >= members.length;
   document.querySelectorAll('[data-member]').forEach(row => row.addEventListener('click', () => openMember(row.dataset.member)));
 }
 
-function openMember(id) {
-  const member = state.data.poolDetails[state.pool].members.find(item => item.id === id);
-  const fieldRows = fields => fields.map(field => {
-    const value = member.fields[field];
-    const display = value === null || value === undefined ? 'Unknown' : Array.isArray(value) ? value.map(title).join(', ') : typeof value === 'boolean' ? (value ? 'Yes' : 'No') : title(String(value));
-    return `<div class="field-row"><strong>${title(field)}</strong><span class="field-value">${display}</span><span>${title(member.statuses[field] || 'unknown')}</span></div>`;
+function openMember(memberId) {
+  const member = state.data.poolDetails[state.pool].members.find(item => item.id === memberId);
+  const fieldRows = fieldNames => fieldNames.map(field => {
+    const raw = member.fields[field];
+    const value = raw === null || raw === undefined ? 'Unknown' : Array.isArray(raw) ? raw.map(text).join(', ') : typeof raw === 'boolean' ? (raw ? 'Yes' : 'No') : text(raw);
+    return `<div class="field-row"><strong>${text(field)}</strong><span>${value}</span><span>${text(member.statuses[field] || 'unknown')}</span></div>`;
   }).join('');
-  el('drawer-content').innerHTML = `<p class="eyebrow">Synthetic member / observable profile</p><h2 class="drawer-title">${shortId(member.id)}</h2><p class="drawer-meta">${member.age} · ${title(member.gender)} · ${member.zone} · arrived day ${member.arrivalDay}</p><div class="field-group"><h3>Hard constraints</h3>${fieldRows(['age_min','age_max','who_to_meet','relationship_structure','smoking','partner_smoking','has_children','partner_children','wants_children','acceptable_zones','schedule'])}</div><div class="field-group"><h3>Soft observations</h3>${fieldRows(['relationship_goal','relationship_pace','lifestyle','conversations','emotional_availability','space_for_relationship','relocate'])}</div>`;
-  el('member-drawer').classList.add('open'); el('member-scrim')?.classList.add('open'); el('drawer-scrim').classList.add('open'); el('member-drawer').setAttribute('aria-hidden', 'false');
+  el('drawer-content').innerHTML = `<h2 class="member-title mono">${shortId(member.id)}</h2><p class="member-meta">Age ${member.age} · ${text(member.gender)} · ${member.zone} · arrived day ${member.arrivalDay} · ${member.available ? 'available' : 'unavailable'}</p>
+    <section class="field-section"><h3>Hard constraint fields</h3>${fieldRows(['age_min','age_max','who_to_meet','relationship_structure','smoking','partner_smoking','has_children','partner_children','wants_children','acceptable_zones','schedule'])}</section>
+    <section class="field-section"><h3>Soft preference fields</h3>${fieldRows(['relationship_goal','relationship_pace','lifestyle','conversations','emotional_availability','space_for_relationship','relocate'])}</section>`;
+  el('member-drawer').classList.add('open');
+  el('drawer-scrim').classList.add('open');
+  el('member-drawer').setAttribute('aria-hidden', 'false');
 }
 
-function closeDrawer() { el('member-drawer').classList.remove('open'); el('drawer-scrim').classList.remove('open'); el('member-drawer').setAttribute('aria-hidden', 'true'); }
-
-function renderDecisions() {
-  const detail = state.data.poolDetails[state.decisionPool];
-  el('decision-day').textContent = `Day ${detail.day} snapshot`;
-  el('ask-budget').textContent = `${detail.askBudget} units available`;
-  el('pair-count').textContent = `${detail.selectedPairs.length} pairs`;
-  el('ask-list').innerHTML = detail.asks.map((ask, index) => `<div class="ask-item"><span class="item-number">${index + 1}</span><div class="item-copy"><strong>${shortId(ask.member_id)}</strong><small>Hard-constraint bundle</small></div><b>3 units</b></div>`).join('') || `<p class="empty">No clarification recommended.</p>`;
-  el('pair-list').innerHTML = detail.selectedPairs.slice(0, 12).map((pair, index) => `<div class="pair-item"><span class="item-number">${index + 1}</span><div class="item-copy"><strong>${shortId(pair[0])} ↔ ${shortId(pair[1])}</strong><small>Reciprocally feasible</small></div><b>Selected</b></div>`).join('') || `<p class="empty">No feasible pair selected.</p>`;
-  const maxScore = Math.max(1, ...detail.edges.slice(0, 30).map(edge => edge.score));
-  el('edge-rows').innerHTML = detail.edges.slice(0, 30).map(edge => `<tr class="${edge.selected ? 'selected-row' : ''}"><td class="member-id">${shortId(edge.left)} ↔ ${shortId(edge.right)}</td><td>${edge.leftZone} / ${edge.rightZone}</td><td><span class="score-bar" style="width:${Math.max(2, edge.score / maxScore * 90)}px"></span>${fmt(edge.score, 2)}</td><td>${edge.selected ? 'Selected' : 'Not selected'}</td></tr>`).join('') || `<tr><td colspan="4" class="empty">No feasible edges.</td></tr>`;
+function closeDrawer() {
+  el('member-drawer').classList.remove('open');
+  el('drawer-scrim').classList.remove('open');
+  el('member-drawer').setAttribute('aria-hidden', 'true');
 }
 
-function renderExperiments() {
-  const methods = [...state.data.experiments].sort((a, b) => (b.primary ?? -1) - (a.primary ?? -1));
-  el('method-rows').innerHTML = methods.map(method => `<tr><td><strong>${method.label}</strong><br><small>${method.seeds.join(', ')} · ${method.valid ? 'all valid' : 'invalid episode'}</small></td><td>${fmt(method.primary)}</td><td>${pct(method.overall.coverage)}</td><td>${fmt(method.overall.mutual_acceptances_per_100, 2)}</td><td>${fmt(method.overall.ask_cost, 1)}</td><td>${method.episodes}</td></tr>`).join('');
-  const max = Math.max(0.5, ...methods.flatMap(method => state.data.scenarios.map(scenario => method.scenarios[scenario]?.msmi_per_100_arrived_members || 0)));
-  const header = `<div class="heat-row"><div class="heat-cell head"></div>${state.data.scenarios.map(scenario => `<div class="heat-cell head">${title(scenario)}</div>`).join('')}</div>`;
-  const rows = methods.map(method => `<div class="heat-row"><div class="heat-cell method">${method.label}</div>${state.data.scenarios.map(scenario => { const value = method.scenarios[scenario]?.msmi_per_100_arrived_members || 0; const light = 96 - Math.round(value / max * 45); return `<div class="heat-cell" style="background:hsl(15 86% ${light}%)">${fmt(value)}</div>`; }).join('')}</div>`).join('');
-  el('scenario-heatmap').innerHTML = header + rows;
+function renderOutput() {
+  const output = state.data.poolDetails[state.outputPool];
+  el('output-summary').innerHTML = [
+    summaryItem('Snapshot day', output.day),
+    summaryItem('Ask budget', output.askBudget),
+    summaryItem('Clarification requests', output.asks.length),
+    summaryItem('Selected matches', output.selectedPairs.length),
+    summaryItem('Feasible candidate edges', output.edges.length),
+  ].join('');
+
+  el('ask-rows').innerHTML = output.asks.map((ask, index) => `<tr><td>${index + 1}</td><td class="mono">${shortId(ask.member_id)}</td><td>Hard-constraint bundle</td><td>3</td></tr>`).join('') || emptyRow(4, 'No clarification request produced for this snapshot.');
+  el('match-rows').innerHTML = output.selectedPairs.map((pair, index) => `<tr><td>${index + 1}</td><td class="mono">${shortId(pair[0])}</td><td class="mono">${shortId(pair[1])}</td><td><span class="tag selected">Selected</span></td></tr>`).join('') || emptyRow(4, 'No match produced for this snapshot.');
+  el('edge-rows').innerHTML = output.edges.slice(0, 100).map(edge => `<tr class="${edge.selected ? 'selected' : ''}"><td class="mono">${shortId(edge.left)}</td><td class="mono">${shortId(edge.right)}</td><td>${edge.leftZone}</td><td>${edge.rightZone}</td><td>${fmt(edge.score, 4)}</td><td>${edge.selected ? '<span class="tag selected">Yes</span>' : 'No'}</td></tr>`).join('') || emptyRow(6, 'No reciprocally feasible candidate edge was produced.');
+  el('feedback-rows').innerHTML = Object.entries(output.feedbackCounts).map(([event, count]) => `<tr><td>${text(event)}</td><td>${count}</td></tr>`).join('') || emptyRow(2, 'No feedback events are present in this snapshot.');
+}
+
+function renderRuns() {
+  el('run-select').innerHTML = state.data.experiments.map(run => `<option value="${run.id}">${run.label} — ${run.source}</option>`).join('');
+  renderRunDetails();
+}
+
+function renderRunDetails() {
+  const run = state.data.experiments.find(item => item.id === el('run-select').value) || state.data.experiments[0];
+  if (!run) {
+    el('run-summary').innerHTML = summaryItem('Saved runs', 0, 'Run an evaluation and rebuild dashboard data.');
+    el('scenario-rows').innerHTML = emptyRow(5, 'No saved run found.');
+    el('episode-rows').innerHTML = emptyRow(10, 'No saved run found.');
+    return;
+  }
+  el('run-summary').innerHTML = [
+    summaryItem('Primary score', fmt(run.primary)),
+    summaryItem('Coverage', pct(run.overall.coverage)),
+    summaryItem('Mutual / 100', fmt(run.overall.mutual_acceptances_per_100, 2)),
+    summaryItem('Ask cost', fmt(run.overall.ask_cost, 1)),
+    summaryItem('Valid episodes', run.valid ? `Yes (${run.episodes})` : 'No'),
+  ].join('');
+
+  el('scenario-rows').innerHTML = state.data.scenarios.map(scenario => {
+    const values = run.scenarios[scenario] || {};
+    return `<tr><td>${text(scenario)}</td><td>${fmt(values.msmi_per_100_arrived_members)}</td><td>${pct(values.coverage)}</td><td>${fmt(values.mutual_acceptances_per_100, 2)}</td><td>${fmt(values.ask_cost, 1)}</td></tr>`;
+  }).join('');
+
+  const key = run.source.replace('.json', '');
+  const episodes = state.data.rawEpisodes?.[key] || [];
+  el('episode-rows').innerHTML = episodes.map(row => `<tr><td>${row.seed}</td><td>${text(row.variant)}</td><td class="${row.valid ? 'yes' : 'no'}">${row.valid ? 'Yes' : 'No'}</td><td>${row.assignments}</td><td>${row.mutual_acceptances}</td><td>${row.dates}</td><td>${row.mutual_second_meeting_intention}</td><td>${pct(row.coverage)}</td><td>${row.ask_cost}</td><td>${row.missing_feedback}</td></tr>`).join('') || emptyRow(10, 'This result file has no episode rows.');
 }
 
 load();

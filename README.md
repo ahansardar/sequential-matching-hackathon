@@ -1,7 +1,9 @@
-# CAVIA Evaluation Studio
+# Sequential Matching Data Viewer
 
-This is a local, dependency-free dashboard for inspecting the public synthetic
-data, CAVIA decisions and experiment results.
+This is a plain, local, dependency-free viewer for inspecting the public
+synthetic dataset, current policy output and saved evaluation results. The
+interface is policy-independent: changing the algorithm does not require a new
+visual design.
 
 ## Build the observable dashboard data
 
