@@ -130,6 +130,12 @@ latency was 0.136 seconds, p95 was 0.166 seconds and the maximum was 0.183
 seconds against the 10-second limit. The largest request was 474,833 bytes and
 the largest response was 911 bytes against the 1 MiB limits.
 
+The final Docker image was also run through the official isolated evaluator on
+public seed 101, development variant. The episode was valid and eligible, the
+container action trace exactly matched the local action trace, and the image was
+43.1 MiB against the 2 GiB limit. The recorded proof is
+`results/adaptive_container_seed101_development.json`.
+
 ## Known risks
 
 - More pairs do not guarantee more MSMI outcomes in a small stochastic episode.
