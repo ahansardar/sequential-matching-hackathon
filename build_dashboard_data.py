@@ -11,11 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cavia import improved_allocation, scored_edges, targeted_asks  # noqa: E402
+from adaptive import plan_asks, select_pairs  # noqa: E402
 from kit import HARD, SOFT  # noqa: E402
 
 
 RESULT_FILES = {
+    "adaptive": "adaptive_101_103_all.json",
+    "adaptive_always_max": "adaptive_always_max_101_103_all.json",
     "cavia": "cavia_101_103_all.json",
     "greedy": "greedy_101_103_all.json",
     "no_targeted_asks": "cavia_no_targeted_asks_101_103_all.json",
@@ -66,9 +68,9 @@ def summarize_pool(pool_id, state):
 
 
 def build_pool_detail(pool_id, state):
-    asks = targeted_asks(state)
-    edges, feedback_stats = scored_edges(state)
-    selected = set(improved_allocation(edges))
+    asks = plan_asks(state)
+    selected_pairs, edges = select_pairs(state)
+    selected = set(selected_pairs)
     by_id = {m["member_id"]: m for m in state["members"]}
     edge_rows = []
     for pair, score in sorted(edges.items(), key=lambda item: (-item[1], item[0])):
@@ -97,8 +99,6 @@ def build_pool_detail(pool_id, state):
         "asks": asks,
         "selectedPairs": [list(pair) for pair in sorted(selected)],
         "edges": edge_rows,
-        "maturedMutual": feedback_stats["matured_mutual"],
-        "maturedMsmi": feedback_stats["matured_msmi"],
     }
 
 
@@ -124,6 +124,8 @@ def load_experiments(results_dir):
         methods.append({
             "id": method_id,
             "label": {
+                "adaptive": "Safe-cardinality policy",
+                "adaptive_always_max": "Ablation · always maximum cardinality",
                 "cavia": "CAVIA",
                 "greedy": "Greedy baseline",
                 "no_targeted_asks": "CAVIA · starter asks",
