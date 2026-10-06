@@ -44,7 +44,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Team policy algorithm and ablation modes |
-| [frontend/](frontend/) | Local visual studio for profiles, decisions, experiments and method explanation |
+| [frontend/](frontend/) | Plain local viewer for profiles, policy output and evaluation runs |
 | [examples/baseline_results/](examples/baseline_results/) | Checked reference runs for all three baselines |
 | [examples/REPORT_GUIDE.md](examples/REPORT_GUIDE.md) | What a complete participant technical report must cover |
 
@@ -69,7 +69,7 @@ python frontend/build_dashboard_data.py
 python -m http.server 8080 --directory frontend
 ```
 
-Open `http://localhost:8080`. The studio lets the team inspect all 2,000 public synthetic profiles, missing fields, clarification choices, feasible pair scores, selected daily batches and matched-seed experiment results. It deliberately excludes latent simulator truth and private evaluation data. See [frontend/README.md](frontend/README.md) for details.
+Open `http://localhost:8080`. The viewer lets the team inspect all 2,000 public synthetic profiles, missing fields, clarification choices, feasible pair scores, selected daily batches and matched-seed evaluation results. It deliberately excludes latent simulator truth and private evaluation data. See [frontend/README.md](frontend/README.md) for details.
 
 To check container execution after installing Docker:
 
