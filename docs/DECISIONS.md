@@ -41,3 +41,16 @@ submission. Add new entries; do not rewrite past decisions after results exist.
 - **Reason:** This produces a complete testable policy while keeping inference
   fast, offline and easy to audit. Exact global matching and trained weights
   remain later experiments, not current claims.
+
+## D-005: Replace CAVIA with guarded maximum-cardinality allocation
+
+- **Status:** accepted as current competition policy
+- **Date:** 7 October 2026
+- **Decision:** Keep the supplied clarification and compatibility rules. Compare
+  the greedy batch with a maximum-cardinality batch, and accept the alternative
+  only when it adds pairs without lowering total observed compatibility.
+- **Reason:** CAVIA scored below greedy on the public comparison. A more complex
+  adaptive policy improved the public score but failed independent-seed
+  validation. The guarded policy tied greedy's public primary score, improved
+  the public mutual-acceptance tie-break and scored 0.542 versus 0.525 across ten
+  independent seeds.

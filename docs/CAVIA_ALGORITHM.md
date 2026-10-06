@@ -3,7 +3,8 @@
 CAVIA means **Constraint-Aware Value-of-Information Allocation**. This document
 explains the first working prototype in simple terms.
 
-Status: implemented prototype. Performance is not yet proven.
+Status: rejected prototype retained for experiment history. It is not the current
+competition policy. See [SAFE_CARDINALITY_ALGORITHM.md](SAFE_CARDINALITY_ALGORITHM.md).
 
 ## 1. Daily decision flow
 

@@ -14,9 +14,7 @@ import uuid
 from kit import Simulator, generate, VERSION
 
 VARIANTS = ('development', 'sparse', 'cold_start', 'delayed', 'shift', 'drift')
-METHODS = ('cavia', 'cavia_no_targeted_asks', 'cavia_greedy',
-           'cavia_no_uncertainty', 'cavia_no_feedback',
-           'cavia_targeted_baseline',
+METHODS = ('adaptive', 'adaptive_greedy', 'adaptive_always_max',
            'greedy', 'no_asks', 'random')
 LIMIT = 1024 * 1024
 
