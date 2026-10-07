@@ -142,3 +142,18 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   confirmation by 0.0500. The pair formula tied its screen and won a fresh
   confirmation by 0.0167, then lost the 120-episode final holdout by 0.0417.
   Full results are in `docs/PAIR_SCORER_EXPERIMENT.md`.
+
+## D-012: Keep the incumbent after objective-separation tests
+
+- **Status:** rejected for submission runtime
+- **Date:** 7 October 2026
+- **Decision:** Keep `adaptive` as the submission default. Retain the raw-
+  compatibility invariants and paired confidence-audit tooling, but do not
+  expose the tested `adaptive_precise` or `adaptive_raw_guard` challengers in
+  the executable interface.
+- **Reason:** On seeds 5201-5210 across all six variants, the fully separated
+  challenger scored 0.2750 versus 0.2833 for the incumbent. Its paired 95%
+  bootstrap interval was -0.0250 to 0.0000. The isolated raw-compatibility
+  guard tied the incumbent at 0.2833 and tied coverage, but reduced mutual
+  acceptances per 100 from 5.2583 to 5.2417. Neither challenger passed the
+  promotion rule.

@@ -24,6 +24,9 @@ from policy import decide  # noqa: E402
 
 
 def research_decide(request, mode):
+    if mode in {"adaptive_precise", "adaptive_raw_guard"}:
+        from experiments.precise_policy import decide as decide_precise
+        return decide_precise(request, mode)
     return decide(request, "adaptive_greedy" if mode == "greedy_fast" else mode)
 
 

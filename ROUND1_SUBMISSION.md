@@ -293,7 +293,7 @@ docker build -t sequential-policy:submission .
 python evaluate.py --image sequential-policy:submission --seeds 101 --variants development --output results/container_check.json
 ```
 
-The current repository passes 49 tests. `verify_data.py` verifies all 2,000
+The current repository passes 57 tests. `verify_data.py` verifies all 2,000
 profiles and 71 published files. The submission image passed the isolated
 seed-101 development check and remained below the 2 GiB image limit.
 
