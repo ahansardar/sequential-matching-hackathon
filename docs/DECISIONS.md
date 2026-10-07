@@ -84,3 +84,18 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   won one 120-episode holdout by 0.0250, then lost a second untouched block by
   0.0417. The apparent lift did not repeat. Full figures are in
   `results/learned_model_selection_summary.json`.
+
+## D-008: Reject the second advanced-policy search
+
+- **Status:** rejected for submission runtime
+- **Date:** 7 October 2026
+- **Decision:** Keep `adaptive` as the default and remove the experimental
+  policies from the executable interface.
+- **Reason:** We tested learned acceptance ranking, response history, scarcity,
+  extra soft questions, exact maximum-weight matching, relationship-goal
+  scoring, combined constraint-and-goal questions, and a transparent
+  full-funnel score. Small tuning gains did not survive untouched seeds. On the
+  ten-seed holdout, the current policy scored 0.475 MSMI per 100 arrived
+  members. Goal plus history scored 0.433, and full-funnel scoring plus history
+  scored 0.383. The current policy therefore remains the best validated choice.
+  Raw research outputs remain local under `results/` and are not runtime inputs.
