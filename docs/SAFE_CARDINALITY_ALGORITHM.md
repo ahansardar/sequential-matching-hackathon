@@ -111,6 +111,13 @@ the simpler policy instead of tuning to favorable public or development seeds.
 The machine-readable selection summary is
 `results/algorithm_selection_summary.json`.
 
+We then trained direct and decomposed outcome models on 18,149 introductions
+from 240 declared synthetic episodes. The strongest history model won tuning
+but lost its untouched holdout. A simpler static model won one holdout and lost
+the next. We kept both models out of the submission runtime because the gain did
+not repeat. See `docs/OUTCOME_MODEL_EXPERIMENT.md` and
+`results/learned_model_selection_summary.json`.
+
 These are synthetic simulator results. They do not guarantee a private-evaluation
 win or describe real relationship outcomes.
 

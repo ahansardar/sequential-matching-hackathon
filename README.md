@@ -44,6 +44,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, safety guard, evidence and ablations |
+| [docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md) | Learned-scoring experiment, training split and rejection evidence |
 | [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Rejected prototype retained as experiment history |
 | [frontend/](frontend/) | Plain local viewer for profiles, policy output and evaluation runs |
 | [examples/baseline_results/](examples/baseline_results/) | Checked reference runs for all three baselines |
@@ -65,6 +66,12 @@ python evaluate.py --baseline random --seeds 101,102,103 --variants all --output
 ```
 
 The full commands take longer than the one-episode quick start. Public variants are `development`, `sparse`, `cold_start`, `delayed`, `shift`, and `drift`. Use your own declared training seeds. Keep the supplied six training pools, two validation pools and two development-test pools disjoint. Day-30 snapshots are not observations from earlier decisions.
+
+The rejected learned-scoring experiment used declared seeds 2001 through 2040
+for training. Its tuning and untouched evaluation blocks used different seeds.
+It is documented for reproducibility in
+[docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md), but it is
+not part of the submitted policy or Docker image.
 
 ### Open the evaluation studio
 

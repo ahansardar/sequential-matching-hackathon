@@ -1,0 +1,187 @@
+{
+  "decision": "retain_safe_cardinality",
+  "reason": "learned candidates did not improve every untouched confirmation block",
+  "training": {
+    "episodes": 240,
+    "feature_policy": "assignment-time public observations only",
+    "introductions": 18149,
+    "seeds": [
+      2001,
+      2002,
+      2003,
+      2004,
+      2005,
+      2006,
+      2007,
+      2008,
+      2009,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026,
+      2027,
+      2028,
+      2029,
+      2030,
+      2031,
+      2032,
+      2033,
+      2034,
+      2035,
+      2036,
+      2037,
+      2038,
+      2039,
+      2040
+    ],
+    "source": "valid observable-feedback rollouts from the public synthetic generator",
+    "variants": [
+      "development",
+      "sparse",
+      "cold_start",
+      "delayed",
+      "shift",
+      "drift"
+    ]
+  },
+  "trials": {
+    "tuning_screen": {
+      "episodes": 60,
+      "challenger": "learned_static",
+      "baseline": "adaptive",
+      "challenger_primary_score": 0.4416666666666667,
+      "baseline_primary_score": 0.35,
+      "paired_primary_delta": 0.09166666666666666,
+      "paired_normal_95_percent_interval": [
+        -0.030468288482558337,
+        0.21380162181589166
+      ],
+      "challenger_total_msmi": 53,
+      "baseline_total_msmi": 42,
+      "paired_wins": 13,
+      "paired_ties": 39,
+      "paired_losses": 8,
+      "scenario_primary_deltas": {
+        "cold_start": 0.1,
+        "delayed": 0.25,
+        "development": 0.1,
+        "drift": 0.1,
+        "shift": 0.0,
+        "sparse": 0.0
+      }
+    },
+    "tuning_screen_history": {
+      "episodes": 60,
+      "challenger": "learned_history",
+      "baseline": "adaptive",
+      "challenger_primary_score": 0.4666666666666667,
+      "baseline_primary_score": 0.35,
+      "paired_primary_delta": 0.11666666666666667,
+      "paired_normal_95_percent_interval": [
+        -0.011695785088960187,
+        0.24502911842229352
+      ],
+      "challenger_total_msmi": 56,
+      "baseline_total_msmi": 42,
+      "paired_wins": 16,
+      "paired_ties": 36,
+      "paired_losses": 8,
+      "scenario_primary_deltas": {
+        "cold_start": 0.05,
+        "delayed": -0.05,
+        "development": 0.3,
+        "drift": 0.25,
+        "shift": 0.2,
+        "sparse": -0.05
+      }
+    },
+    "history_holdout": {
+      "episodes": 120,
+      "challenger": "learned_history",
+      "baseline": "adaptive",
+      "challenger_primary_score": 0.4166666666666667,
+      "baseline_primary_score": 0.5083333333333333,
+      "paired_primary_delta": -0.09166666666666666,
+      "paired_normal_95_percent_interval": [
+        -0.16681432088581394,
+        -0.016519012447519382
+      ],
+      "challenger_total_msmi": 100,
+      "baseline_total_msmi": 122,
+      "paired_wins": 14,
+      "paired_ties": 69,
+      "paired_losses": 37,
+      "scenario_primary_deltas": {
+        "cold_start": -0.2,
+        "delayed": -0.1,
+        "development": -0.075,
+        "drift": -0.075,
+        "shift": -0.1,
+        "sparse": 0.0
+      }
+    },
+    "static_holdout": {
+      "episodes": 120,
+      "challenger": "learned_static",
+      "baseline": "adaptive",
+      "challenger_primary_score": 0.325,
+      "baseline_primary_score": 0.3,
+      "paired_primary_delta": 0.025,
+      "paired_normal_95_percent_interval": [
+        -0.035096491039778,
+        0.08509649103977801
+      ],
+      "challenger_total_msmi": 78,
+      "baseline_total_msmi": 72,
+      "paired_wins": 21,
+      "paired_ties": 83,
+      "paired_losses": 16,
+      "scenario_primary_deltas": {
+        "cold_start": 0.125,
+        "delayed": 0.075,
+        "development": -0.05,
+        "drift": -0.05,
+        "shift": -0.025,
+        "sparse": 0.075
+      }
+    },
+    "static_confirmation": {
+      "episodes": 120,
+      "challenger": "learned_static",
+      "baseline": "adaptive",
+      "challenger_primary_score": 0.31666666666666665,
+      "baseline_primary_score": 0.35833333333333334,
+      "paired_primary_delta": -0.041666666666666664,
+      "paired_normal_95_percent_interval": [
+        -0.10367262252649923,
+        0.02033928919316589
+      ],
+      "challenger_total_msmi": 76,
+      "baseline_total_msmi": 86,
+      "paired_wins": 17,
+      "paired_ties": 80,
+      "paired_losses": 23,
+      "scenario_primary_deltas": {
+        "cold_start": 0.0,
+        "delayed": -0.025,
+        "development": -0.075,
+        "drift": -0.125,
+        "shift": 0.0,
+        "sparse": -0.025
+      }
+    }
+  }
+}

@@ -70,3 +70,17 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   The simpler safe-cardinality method remains the more defensible choice for
   unseen private worlds. Full selection figures are in
   `results/algorithm_selection_summary.json`.
+
+## D-007: Do not promote the learned outcome scorer
+
+- **Status:** rejected for submission runtime
+- **Date:** 7 October 2026
+- **Decision:** Keep the offline trainer and fitted asset for reproducibility,
+  but keep `adaptive` as the submission default and leave the learned scorer
+  out of the Docker image.
+- **Reason:** The trainer used 18,149 valid introductions from 240 declared
+  synthetic episodes. The history model won its 60-episode tuning screen but
+  lost a 120-episode untouched holdout by 0.0917 MSMI per 100. The static model
+  won one 120-episode holdout by 0.0250, then lost a second untouched block by
+  0.0417. The apparent lift did not repeat. Full figures are in
+  `results/learned_model_selection_summary.json`.
