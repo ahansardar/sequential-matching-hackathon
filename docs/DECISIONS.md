@@ -54,3 +54,19 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   validation. The guarded policy tied greedy's public primary score, improved
   the public mutual-acceptance tie-break and scored 0.542 versus 0.525 across ten
   independent seeds.
+
+## D-006: Keep safe-cardinality after broader algorithm search
+
+- **Status:** accepted as final selection for this experiment pass
+- **Date:** 7 October 2026
+- **Decision:** Keep `adaptive` as the submission default. Retain parallel
+  matched-seed evaluation tooling, but remove rejected scoring, feedback and
+  clarification candidates from the runtime image.
+- **Reason:** Goal-only scoring won a ten-seed screen but lost the untouched
+  twenty-seed holdout. A response-history tie-break tied the public score and
+  improved two experiment blocks, but lost the final untouched holdout. Across
+  300 paired independent episodes its estimated primary lift was only 0.0133,
+  with a 95% normal interval from -0.0200 to 0.0467. The interval includes zero.
+  The simpler safe-cardinality method remains the more defensible choice for
+  unseen private worlds. Full selection figures are in
+  `results/algorithm_selection_summary.json`.

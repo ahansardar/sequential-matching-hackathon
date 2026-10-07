@@ -7,6 +7,7 @@ regenerated with evaluate.py and the offline container.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 from pathlib import Path
 import sys
@@ -64,11 +65,17 @@ def direct_episode(seed, variant, mode):
     return result
 
 
+def _run_job(job):
+    """Top-level adapter so Windows worker processes can pickle the job."""
+    return direct_episode(*job)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--methods", default="adaptive,greedy,cavia")
     parser.add_argument("--seeds", default="101,102,103")
     parser.add_argument("--variants", default="all")
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--output", type=Path, default=ROOT / "results" / "research_comparison.json")
     args = parser.parse_args()
     methods = args.methods.split(",")
@@ -77,18 +84,20 @@ def main():
 
     payload = {"trusted_in_process": True, "methods": {}}
     for method in methods:
-        rows = []
-        for variant in variants:
-            for seed in seeds:
-                row = direct_episode(seed, variant, method)
-                rows.append(row)
-                print(json.dumps({
-                    "method": method,
-                    "variant": variant,
-                    "seed": seed,
-                    "msmi": row["mutual_second_meeting_intention"],
-                    "coverage": row["coverage"],
-                }), flush=True)
+        jobs = [(seed, variant, method) for variant in variants for seed in seeds]
+        if args.workers > 1:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=args.workers) as executor:
+                rows = list(executor.map(_run_job, jobs))
+        else:
+            rows = [direct_episode(*job) for job in jobs]
+        for row in rows:
+            print(json.dumps({
+                "method": method,
+                "variant": row["variant"],
+                "seed": row["seed"],
+                "msmi": row["mutual_second_meeting_intention"],
+                "coverage": row["coverage"],
+            }), flush=True)
         payload["methods"][method] = {"episodes": rows, "summary": summarise(rows)}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n", encoding="utf-8")

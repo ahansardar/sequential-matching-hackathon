@@ -102,6 +102,15 @@ The safe-cardinality policy produced the following matched results:
 | Public mutual acceptances per 100 | 5.64 | 5.50 | Safe policy wins the next tie-break |
 | Independent seeds 1101-1110, 60 episodes | 0.542 | 0.525 | Small primary-score improvement |
 
+We also tested goal-only scoring, outcome-weighted scoring, targeted questions
+and feedback-based tie-breaks. Some won small development screens, but none
+improved the last untouched holdout. The feedback tie-break's 300-episode paired
+estimate was 0.0133 points above safe-cardinality, but its 95% normal interval
+ranged from -0.0200 to 0.0467 and it lost the final 120-episode holdout. We kept
+the simpler policy instead of tuning to favorable public or development seeds.
+The machine-readable selection summary is
+`results/algorithm_selection_summary.json`.
+
 These are synthetic simulator results. They do not guarantee a private-evaluation
 win or describe real relationship outcomes.
 
