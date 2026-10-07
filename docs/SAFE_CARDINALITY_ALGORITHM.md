@@ -1,10 +1,10 @@
-# Safe-cardinality matching policy
+# Guarded-history safe-cardinality policy
 
 Status: current competition policy.
 
-This policy makes one careful change to the strongest supplied baseline. It
-tries to serve more people in each daily batch, but accepts the change only when
-the total observed compatibility does not decrease.
+This policy builds on the validated safe-cardinality method. It tries to serve
+more people in each daily batch. From day 20, it also uses observed response and
+acceptance history to prefer reliable members when compatibility is close.
 
 It uses no external model, API, network connection or hidden simulator value.
 
@@ -15,9 +15,11 @@ Each day has two phases.
 1. Ask up to four available people for their missing hard-constraint bundle.
 2. Build the reciprocal feasible graph after the answers arrive.
 3. Give each feasible pair an observed compatibility score.
-4. Build both a greedy batch and a maximum-cardinality batch.
-5. Use the maximum-cardinality batch only if it is strictly larger and its total
-   compatibility is at least as high as the greedy batch.
+4. From day 20, add a small score based on observed response and acceptance
+   history.
+5. Build both a greedy batch and a maximum-cardinality batch.
+6. Use the maximum-cardinality batch only if it is strictly larger and its total
+   policy score is at least as high as the greedy batch.
 
 If either safety condition fails, the policy returns the greedy batch.
 
@@ -63,9 +65,37 @@ soft fields:
 
 A missing field gives no point. It is not treated as agreement or disagreement.
 
-This is the same transparent score used by the supplied greedy baseline. Keeping
-the score fixed isolates the effect of allocation and reduces public-simulator
-overfitting.
+This is the same transparent compatibility count used by the supplied greedy
+baseline.
+
+## Mature-history tie-break
+
+Before day 20, the pair score is:
+
+```text
+100 * number of equal observed soft fields
+```
+
+From day 20, each member receives two smoothed estimates: how often they answer
+an introduction, and how often an answer is Yes. The policy adds the log-odds
+of those two estimates for both people:
+
+```text
+pair score = 100 * compatibility
+           + history quality of person A
+           + history quality of person B
+```
+
+The priors are 0.765 for response and 0.46 for acceptance, each with strength
+four. They were fixed during development before the final 4001-4020 holdout.
+Smoothing stops one early answer from dominating a member's history. The factor
+of 100 keeps one observed compatibility point much larger than the history
+adjustment on an individual edge.
+
+Only feedback already present in the policy request is counted. A missing
+response counts as a response trial but not a response. Acceptance is measured
+only when a response exists. The policy does not use member IDs, private seeds,
+future events or hidden simulator values.
 
 ## Allocation
 
@@ -74,13 +104,13 @@ non-overlapping edge can be added.
 
 The alternative batch uses Edmonds' blossom algorithm to find a maximum-
 cardinality matching in the general graph. A deterministic local improvement
-then raises observed compatibility without reducing the number of pairs.
+then raises the observable policy score without reducing the number of pairs.
 
 The policy accepts the alternative only when both statements are true:
 
 ```text
 alternative pair count > greedy pair count
-alternative total compatibility >= greedy total compatibility
+alternative total policy score >= greedy total policy score
 ```
 
 This guard prevents the global allocator from changing a batch merely because a
@@ -103,13 +133,18 @@ The safe-cardinality policy produced the following matched results:
 | Independent seeds 1101-1110, 60 episodes | 0.542 | 0.525 | Small primary-score improvement |
 
 We also tested goal-only scoring, outcome-weighted scoring, targeted questions
-and feedback-based tie-breaks. Some won small development screens, but none
-improved the last untouched holdout. The feedback tie-break's 300-episode paired
-estimate was 0.0133 points above safe-cardinality, but its 95% normal interval
-ranged from -0.0200 to 0.0467 and it lost the final 120-episode holdout. We kept
-the simpler policy instead of tuning to favorable public or development seeds.
-The machine-readable selection summary is
-`results/algorithm_selection_summary.json`.
+and early feedback tie-breaks. Several won small development screens and then
+lost holdouts. The useful change was to delay history until day 20 and keep
+compatibility dominant.
+
+The gated version scored 0.5000 versus 0.4750 for the previous policy on its
+60-episode screen. It then scored 0.2708 versus 0.2500 on a fresh 120-episode
+holdout covering all six variants. This is a measured gain of 0.0208, not proof
+of a private-evaluation win. On the small 18-episode public set, it scored
+0.3611 versus 0.3889 for the previous policy. The larger independent evidence
+favored the gated method, but the public loss shows that the gain is uncertain.
+The search details are in
+`docs/SCORE_TARGET_ANALYSIS.md`.
 
 We then trained direct and decomposed outcome models on 18,149 introductions
 from 240 declared synthetic episodes. The strongest history model won tuning
@@ -125,7 +160,8 @@ win or describe real relationship outcomes.
 
 | Mode | Purpose |
 |---|---|
-| `adaptive` | Current guarded safe-cardinality policy |
+| `adaptive` | Current guarded-history safe-cardinality policy |
+| `adaptive_legacy` | Previous safe-cardinality policy without history |
 | `adaptive_greedy` | Allocation ablation that reproduces the supplied greedy batch |
 | `adaptive_always_max` | Removes the safety guard and always uses maximum cardinality |
 
@@ -146,17 +182,19 @@ latency was 0.136 seconds, p95 was 0.166 seconds and the maximum was 0.183
 seconds against the 10-second limit. The largest request was 474,833 bytes and
 the largest response was 911 bytes against the 1 MiB limits.
 
-The final Docker image was also run through the official isolated evaluator on
-public seed 101, development variant. The episode was valid and eligible, the
-container action trace exactly matched the local action trace, and the image was
-43.1 MiB against the 2 GiB limit. The recorded proof is
-`results/adaptive_container_seed101_development.json`.
+The guarded-history Docker image was run through the official isolated evaluator
+on public seed 101, development variant. The episode was valid and eligible,
+scored 0.5, reached 0.465 coverage and produced 10.0 mutual acceptances per 100.
+Those metrics match the trusted local run. The image was 45,191,941 bytes,
+well below the 2 GiB limit. The local proof is
+`results/container_check_history.json`.
 
 ## Known risks
 
 - More pairs do not guarantee more MSMI outcomes in a small stochastic episode.
-- The compatibility score uses equality and does not estimate directional
-  acceptance probabilities.
+- Member history is sparse and noisy, especially shortly after day 20.
+- The history signal estimates each person's general behavior, not their
+  response to one particular partner.
 - Cold-start and sparse pools can still have very few feasible edges.
 - The local quality refinement does not prove maximum weight among all maximum-
   cardinality matchings.

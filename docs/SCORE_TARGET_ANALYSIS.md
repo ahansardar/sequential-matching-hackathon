@@ -4,9 +4,9 @@
 
 We did not find a rules-compliant algorithm that reliably scores 0.9.
 
-The current `adaptive` policy remains the submission default. It protects every
-hard constraint, tries to increase the number of daily pairs, and rejects an
-alternative batch if its observed compatibility total is lower.
+The current `adaptive` policy is now the guarded-history version. It protects
+every hard constraint, keeps compatibility dominant and uses mature observed
+response history from day 20 onward.
 
 ## What a score of 0.9 means
 
@@ -38,7 +38,7 @@ The reusable legal search runner is `experiments/search_observable_policy.py`.
 It passes only the observable state to its decision logic and compares every
 configuration on identical seeds.
 
-## Final confirmation
+## Earlier rejected candidate
 
 We compared the current policy with the best small-screen history candidate on
 20 untouched seeds in all six scenarios. That is 120 episodes per policy.
@@ -48,16 +48,38 @@ We compared the current policy with the best small-screen history candidate on
 | Current safe-cardinality policy | 0.2875 | 0.3386 | 5.2750 |
 | Light response-history policy | 0.2458 | 0.3392 | 5.3792 |
 
-The history policy increased the acceptance tie-break slightly but reduced the
-primary MSMI score. It is rejected.
+This ungated history policy increased the acceptance tie-break slightly but
+reduced the primary MSMI score. It remains rejected.
 
 A separate five-seed block gave the current policy 0.833. This did not repeat
 on the larger untouched block. Small samples can look excellent because one or
 two additional successful pairs move the score sharply.
 
+## Gated-history confirmation
+
+The next experiment changed one thing: history is ignored until day 20. Pair
+compatibility is multiplied by 100, and smoothed response and acceptance
+history is used only as a small secondary signal.
+
+| Evaluation block | Episodes per policy | Guarded history | Previous policy | Difference |
+|---|---:|---:|---:|---:|
+| Seeds 3901-3910, all variants | 60 | 0.5000 | 0.4750 | +0.0250 |
+| Fresh seeds 4001-4020, all variants | 120 | 0.2708 | 0.2500 | +0.0208 |
+| Public seeds 101-103, all variants | 18 | 0.3611 | 0.3889 | -0.0278 |
+
+On the fresh holdout, coverage was 0.3367 versus 0.3353 and mutual acceptances
+per 100 were 5.4875 versus 5.3500. The primary gain repeated, so the gated
+version replaces the previous policy. The old method remains available as
+`adaptive_legacy` for direct ablation.
+
+The much smaller public block moved in the other direction. Across these three
+listed blocks, weighted by episode count, guarded history is ahead by about
+0.0177 MSMI per 100. This average includes a tuning screen, so the untouched
+holdout is still the main selection evidence.
+
 ## Decision
 
-Do not claim or optimise toward a selected 0.9 result. That would be seed
-cherry-picking, not a competition-ready improvement. Keep `adaptive` until a
-new method beats it on a large untouched block and then repeats the gain on a
-second block.
+Promote the day-20 guarded-history policy because its gain repeated on a fresh
+holdout. Do not claim that it will score 0.9 or guarantee a win. The measured
+gain is small, one small public block favored the previous policy, and hidden
+evaluation worlds may behave differently.

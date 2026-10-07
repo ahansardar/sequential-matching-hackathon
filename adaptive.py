@@ -1,18 +1,22 @@
-"""Safe maximum-cardinality policy for sequential reciprocal matching.
+"""Guarded-history policy for sequential reciprocal matching.
 
-The policy keeps the supplied clarification and compatibility rules. It changes
-allocation only when it can serve more people without reducing the batch's
-total observed compatibility. Inference uses only the observable JSON request.
+The policy keeps the supplied clarification and reciprocal feasibility rules.
+It ranks feasible pairs by observed compatibility, then adds a small mature-
+history signal from day 20. Inference uses only the observable JSON request.
 """
 from __future__ import annotations
 
 import collections
 import itertools
+import math
 
 from kit import HARD, SOFT, baseline_asks, eligibility
 
 
-VERSION = "safe-cardinality-1.0"
+VERSION = "guarded-history-2.0"
+HISTORY_START_DAY = 20
+RESPONSE_PRIOR = (0.765, 4.0)
+ACCEPT_PRIOR = (0.46, 4.0)
 
 
 def _pair_key(left, right):
@@ -30,7 +34,55 @@ def _available_with_known_constraints(state):
     )
 
 
-def _scored_edges(state):
+def _feedback_history(state):
+    histories = {}
+
+    def member_history(member_id):
+        return histories.setdefault(member_id, {
+            "response_trials": 0,
+            "responses": 0,
+            "accept_trials": 0,
+            "accepts": 0,
+        })
+
+    for event in state.get("feedback", []):
+        if event.get("event") != "introduction_response" or not event.get("member_id"):
+            continue
+        history = member_history(event["member_id"])
+        history["response_trials"] += 1
+        if event.get("value") is not None:
+            history["responses"] += 1
+            history["accept_trials"] += 1
+            history["accepts"] += int(event.get("value") == "yes")
+    return histories
+
+
+def _posterior(successes, trials, prior):
+    mean, strength = prior
+    return (successes + mean * strength) / (trials + strength)
+
+
+def _logit(value):
+    value = min(1 - 1e-6, max(1e-6, value))
+    return math.log(value / (1 - value))
+
+
+def _history_quality(history):
+    history = history or {}
+    response = _posterior(
+        history.get("responses", 0),
+        history.get("response_trials", 0),
+        RESPONSE_PRIOR,
+    )
+    acceptance = _posterior(
+        history.get("accepts", 0),
+        history.get("accept_trials", 0),
+        ACCEPT_PRIOR,
+    )
+    return _logit(response) + _logit(acceptance)
+
+
+def _compatibility_edges(state):
     members = _available_with_known_constraints(state)
     past = {
         _pair_key(item["user_a"], item["user_b"])
@@ -49,6 +101,23 @@ def _scored_edges(state):
             for field in SOFT
         ))
     return edges
+
+
+def _scored_edges(state):
+    """Keep compatibility primary and use mature feedback as a tie-breaker."""
+    compatibility = _compatibility_edges(state)
+    if state.get("day", 0) < HISTORY_START_DAY:
+        return {pair: 100.0 * score for pair, score in compatibility.items()}
+    histories = _feedback_history(state)
+    quality = {
+        member_id: _history_quality(histories.get(member_id))
+        for pair in compatibility
+        for member_id in pair
+    }
+    return {
+        pair: 100.0 * score + quality[pair[0]] + quality[pair[1]]
+        for pair, score in compatibility.items()
+    }
 
 
 def _greedy_pairs(edges):
@@ -231,12 +300,18 @@ def _safe_batch(edges):
 
 
 def select_pairs(state, mode="adaptive"):
-    edges = _scored_edges(state)
+    compatibility = _compatibility_edges(state)
     if mode == "adaptive_greedy":
-        pairs = _greedy_pairs(edges)
+        edges = compatibility
+        pairs = _greedy_pairs(compatibility)
     elif mode == "adaptive_always_max":
-        pairs = _maximum_quality_batch(edges)
+        edges = compatibility
+        pairs = _maximum_quality_batch(compatibility)
+    elif mode == "adaptive_legacy":
+        edges = compatibility
+        pairs = _safe_batch(compatibility)
     else:
+        edges = _scored_edges(state)
         pairs = _safe_batch(edges)
     return pairs, edges
 

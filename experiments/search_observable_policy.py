@@ -84,11 +84,15 @@ def _histories(state):
 
 def _member_quality(history, config, day):
     history = history or {}
+    if day < config.get("history_start_day", 0):
+        return 0.0
     scale = config["prior_scale"]
     response = _posterior(history.get("responses", 0), history.get("response_trials", 0), "response", scale)
     accept = _posterior(history.get("accepts", 0), history.get("accept_trials", 0), "accept", scale)
     second = _posterior(history.get("seconds", 0), history.get("second_trials", 0), "second", scale)
     trials = history.get("response_trials", 0)
+    if trials < config.get("history_min_trials", 0):
+        return 0.0
     if day < config.get("switch_day", -1):
         return config.get("early_exploration_weight", 0.0) / math.sqrt(1 + trials)
     return (
@@ -243,6 +247,33 @@ def _configs():
                 "early_exploration_weight": 3.0,
             })
             configs.append(config)
+    lexicographic_sets = {
+        "lex_equal_light": ([100, 100, 100, 100, 100, 100, 100], 1.0, 1.0, 0.0, 0),
+        "lex_equal_mature": ([100, 100, 100, 100, 100, 100, 100], 1.0, 1.0, 0.0, 2),
+        "lex_funnel_static": ([116, 105, 102, 103, 100, 100, 100], 0.0, 0.0, 0.0, 0),
+        "lex_funnel_light": ([116, 105, 102, 103, 100, 100, 100], 1.0, 1.0, 0.0, 0),
+        "lex_funnel_mature": ([116, 105, 102, 103, 100, 100, 100], 1.0, 1.0, 0.5, 2),
+        "lex_funnel_accept": ([116, 105, 102, 103, 100, 100, 100], 0.5, 1.5, 0.0, 2),
+    }
+    for name, values in lexicographic_sets.items():
+        soft_weights, response, accept, second, minimum_trials = values
+        source = next(item for item in configs if item["name"] == "equal_none")
+        config = dict(source)
+        config.update({
+            "name": name,
+            "soft_weights": soft_weights,
+            "response_weight": response,
+            "accept_weight": accept,
+            "second_weight": second,
+            "history_min_trials": minimum_trials,
+        })
+        configs.append(config)
+    for start_day in (10, 20, 30, 40):
+        source = next(item for item in configs if item["name"] == "lex_equal_light")
+        config = dict(source)
+        config["name"] = f"lex_equal_light_start_{start_day}"
+        config["history_start_day"] = start_day
+        configs.append(config)
     return configs
 
 

@@ -113,3 +113,19 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   Zone-focused questions and two-phase exploration also lost their screens.
   A small five-seed block reached 0.833, showing that isolated high scores are
   unstable. Full details are in `docs/SCORE_TARGET_ANALYSIS.md`.
+
+## D-010: Promote the day-20 guarded-history tie-break
+
+- **Status:** accepted as current competition policy
+- **Date:** 7 October 2026
+- **Decision:** Keep the existing clarification, reciprocal feasibility and
+  guarded maximum-cardinality allocation. From day 20, add Bayesian-smoothed
+  response and acceptance history as a small secondary pair signal. Preserve
+  the previous method as `adaptive_legacy` for ablation.
+- **Reason:** An ungated history candidate failed an earlier confirmation, so
+  it was not promoted. Adding a day-20 maturity gate scored 0.5000 versus
+  0.4750 for the previous method on a 60-episode screen, then 0.2708 versus
+  0.2500 on a fresh 120-episode holdout across all six variants. The repeated
+  gain is modest. It also lost 0.3611 versus 0.3889 on the much smaller
+  18-episode public block. The mixed result does not guarantee a private score
+  or competition win.

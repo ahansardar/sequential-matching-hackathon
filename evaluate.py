@@ -14,7 +14,7 @@ import uuid
 from kit import Simulator, generate, VERSION
 
 VARIANTS = ('development', 'sparse', 'cold_start', 'delayed', 'shift', 'drift')
-METHODS = ('adaptive', 'adaptive_greedy', 'adaptive_always_max',
+METHODS = ('adaptive', 'adaptive_greedy', 'adaptive_always_max', 'adaptive_legacy',
            'greedy', 'no_asks', 'random')
 LIMIT = 1024 * 1024
 

@@ -5,7 +5,16 @@ import json
 import random
 import unittest
 
-from adaptive import _maximum_cardinality, _safe_batch, decide, plan_asks, select_pairs
+from adaptive import (
+    _feedback_history,
+    _history_quality,
+    _maximum_cardinality,
+    _safe_batch,
+    _scored_edges,
+    decide,
+    plan_asks,
+    select_pairs,
+)
 from kit import Simulator, baseline_asks, baseline_match, eligibility, generate
 
 
@@ -97,6 +106,74 @@ class AdaptivePolicyTests(unittest.TestCase):
         response = decide({"phase": "ask", "state": state, "memory": None})
         encoded = json.dumps(response["memory"], allow_nan=False).encode()
         self.assertLess(len(encoded), 1024 * 1024)
+
+    def test_history_uses_only_observed_directional_responses(self):
+        state = {
+            "feedback": [
+                {"event": "introduction_response", "member_id": "a", "value": "yes"},
+                {"event": "introduction_response", "member_id": "a", "value": None},
+                {"event": "introduction_response", "member_id": "b", "value": "no"},
+                {"event": "date_happened", "member_id": None, "value": True},
+            ]
+        }
+        histories = _feedback_history(state)
+        self.assertEqual(
+            histories["a"],
+            {"response_trials": 2, "responses": 1, "accept_trials": 1, "accepts": 1},
+        )
+        self.assertEqual(
+            histories["b"],
+            {"response_trials": 1, "responses": 1, "accept_trials": 1, "accepts": 0},
+        )
+        self.assertGreater(_history_quality(histories["a"]), _history_quality(histories["b"]))
+
+    def test_history_signal_starts_on_day_twenty(self):
+        fields = {
+            "age_min": 18,
+            "age_max": 40,
+            "who_to_meet": ["woman", "man"],
+            "relationship_structure": "monogamous",
+            "smoking": "no",
+            "partner_smoking": "no_smoking",
+            "has_children": False,
+            "partner_children": "no_children",
+            "wants_children": "yes",
+            "acceptable_zones": ["central"],
+            "schedule": ["weekend_day"],
+            "relationship_goal": "long_term",
+            "relationship_pace": "steady",
+            "lifestyle": "balanced",
+            "conversations": "deep",
+            "emotional_availability": "ready",
+            "space_for_relationship": "ample",
+            "relocate": "yes",
+        }
+
+        def member(member_id, gender):
+            return {
+                "member_id": member_id,
+                "pool_id": "test",
+                "age": 25,
+                "gender": gender,
+                "zone": "central",
+                "available": True,
+                "fields": dict(fields),
+            }
+
+        state = {
+            "day": 19,
+            "members": [member("a", "woman"), member("b", "man")],
+            "introductions": [],
+            "feedback": [
+                {"event": "introduction_response", "member_id": "a", "value": "yes"},
+                {"event": "introduction_response", "member_id": "b", "value": "no"},
+            ],
+        }
+        early = _scored_edges(state)[("a", "b")]
+        state["day"] = 20
+        mature = _scored_edges(state)[("a", "b")]
+        self.assertEqual(early, 700.0)
+        self.assertNotEqual(mature, early)
 
     def test_empty_state(self):
         state = {

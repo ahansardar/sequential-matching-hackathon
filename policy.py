@@ -39,6 +39,7 @@ if __name__ == '__main__':
         '--baseline',
         choices=[
             'adaptive', 'adaptive_greedy', 'adaptive_always_max',
+            'adaptive_legacy',
             'greedy', 'no_asks', 'random',
         ],
         default='adaptive',
