@@ -1,4 +1,4 @@
-"""Build observable-only data for the local CAVIA evaluation dashboard."""
+"""Build observable-only data for the local policy evaluation dashboard."""
 from __future__ import annotations
 
 import argparse
@@ -124,7 +124,7 @@ def load_experiments(results_dir):
         methods.append({
             "id": method_id,
             "label": {
-                "adaptive": "Safe-cardinality policy",
+                "adaptive": "Guarded-history policy",
                 "adaptive_always_max": "Ablation · always maximum cardinality",
                 "cavia": "CAVIA",
                 "greedy": "Greedy baseline",
