@@ -2,15 +2,14 @@
 
 ## Team details
 
-- **Team name:** `[ADD OFFICIAL TEAM NAME]`
-- **Team members:** Ahan Sardar and `[ADD TEAMMATE FULL NAME]`
+- **Team name:** LuminaX
+- **Team members:** Ahan Sardar and Enakshee Mondal
 - **Repository:** `https://github.com/ahansardar/sequential-matching-hackathon`
 - **Selected policy:** Guarded-history safe-cardinality
 - **Policy version:** `guarded-history-2.0`
 - **Prepared on:** 7 October 2026
 
-Replace the two bracketed values before submission. Do not add phone numbers,
-passwords, private profiles, or organiser-only data.
+Do not add phone numbers, passwords, private profiles, or organiser-only data.
 
 ## Summary
 
@@ -312,8 +311,6 @@ rules-compliant method that survived our matched-seed experiments.
 
 ## Final checklist
 
-- [ ] Add the official team name.
-- [ ] Add the teammate's full name.
 - [ ] Ask the teammate to check every score and limitation.
 - [ ] Export a frozen PDF if the Google Form requests one.
 - [ ] Submit through the official Google Form before 9 October 2026, 23:59 IST.
