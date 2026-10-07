@@ -13,10 +13,11 @@ import math
 from kit import HARD, SOFT, baseline_asks, eligibility
 
 
-VERSION = "guarded-history-2.0"
+VERSION = "guarded-history-2.1"
 HISTORY_START_DAY = 20
 RESPONSE_PRIOR = (0.765, 4.0)
 ACCEPT_PRIOR = (0.46, 4.0)
+HISTORY_MEMBER_LIMIT = 20.0
 
 
 def _pair_key(left, right):
@@ -79,7 +80,8 @@ def _history_quality(history):
         history.get("accept_trials", 0),
         ACCEPT_PRIOR,
     )
-    return _logit(response) + _logit(acceptance)
+    quality = _logit(response) + _logit(acceptance)
+    return max(-HISTORY_MEMBER_LIMIT, min(HISTORY_MEMBER_LIMIT, quality))
 
 
 def _compatibility_edges(state):

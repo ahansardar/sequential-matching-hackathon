@@ -46,6 +46,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, history gate, safety guard, evidence and ablations |
+| [docs/CONFIDENCE_AUDIT.md](docs/CONFIDENCE_AUDIT.md) | Matched-seed uncertainty checks and the evidence rule used for claims |
 | [docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md) | Learned-scoring experiment, training split and rejection evidence |
 | [docs/PAIR_SCORER_EXPERIMENT.md](docs/PAIR_SCORER_EXPERIMENT.md) | Pair scorer, clarification and conservative formula rejection evidence |
 | [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Rejected prototype retained as experiment history |
@@ -67,7 +68,14 @@ python evaluate.py --baseline adaptive_legacy --seeds 101,102,103 --variants all
 python evaluate.py --baseline greedy --seeds 101,102,103 --variants all --output results/greedy.json
 python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --output results/no_asks.json
 python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/random.json
+python experiments/allocation_telemetry.py --seeds 5301,5302,5303 --variants all --output results/allocation_telemetry.json
+python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001,4002,4003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020 --variants all --resamples 20000 --output results/history_confidence.json
 ```
+
+The allocation audit measures how often the global maximum-cardinality guard
+actually changes a daily batch. The confidence audit reports matched-seed
+differences and a stratified bootstrap interval; its `promote` field is an
+evidence grade, not an automatic policy-selection command.
 
 The full commands take longer than the one-episode quick start. Public variants are `development`, `sparse`, `cold_start`, `delayed`, `shift`, and `drift`. Use your own declared training seeds. Keep the supplied six training pools, two validation pools and two development-test pools disjoint. Day-30 snapshots are not observations from earlier decisions.
 

@@ -162,6 +162,7 @@ def _edges(state, config):
             left_value = left["fields"].get(field)
             right_value = right["fields"].get(field)
             if left_value is None or right_value is None:
+                score += weight * config.get("missing_soft_credit", 0.0)
                 continue
             if left_value == right_value:
                 score += weight
@@ -408,6 +409,14 @@ def _configs():
         })
         configs.append(config)
     incumbent = next(item for item in configs if item["name"] == "lex_equal_light_start_20")
+    for credit in (0.25, 0.5):
+        config = dict(incumbent)
+        config.update({
+            "name": f"missing_soft_credit_{credit:g}",
+            "missing_soft_credit": credit,
+            "protect_incumbent": True,
+        })
+        configs.append(config)
     pair_candidates = (
         ("pair_funnel_tie_1", "learned_funnel", 1.0, 20, 0),
         ("pair_funnel_tie_3", "learned_funnel", 3.0, 20, 0),

@@ -6,8 +6,8 @@
 - **Team members:** Ahan Sardar and Enakshee Mondal
 - **Repository:** `https://github.com/ahansardar/sequential-matching-hackathon`
 - **Selected policy:** Guarded-history safe-cardinality
-- **Policy version:** `guarded-history-2.0`
-- **Prepared on:** 7 October 2026
+- **Policy version:** `guarded-history-2.1`
+- **Prepared on:** 8 October 2026
 
 ## Summary
 
@@ -51,7 +51,7 @@ budget is limited.
 Our final hypothesis is:
 
 > A constraint-first policy that combines compatibility, mature observed
-> response history, and guarded maximum-cardinality allocation will improve
+> response history, and guarded maximum-cardinality allocation may improve
 > MSMI over a purely greedy policy without risking reciprocal feasibility.
 
 The hypothesis has three testable claims:
@@ -104,6 +104,11 @@ The policy asks available members who have unanswered hard constraints and no
 declined hard field. It does not ask again after a declined hard field because
 the field will remain unknown.
 
+The current implementation takes the first eligible members in the observable
+state order. It does not rank them by graph degree or expected edge unlocks.
+This deterministic rule can spend budget on a member who has few plausible
+partners, so clarification remains a known weakness.
+
 We tested an expected-unlock policy that asked members whose answers could open
 the most plausible reciprocal edges. It scored 0.3833 versus 0.2500 on its
 30-episode screen. On a fresh 60-episode block, it scored 0.2583 versus 0.3083.
@@ -122,6 +127,14 @@ For each feasible pair, we count equal observed values across seven soft fields:
 - relocation preference.
 
 A missing value gives no point. It is not treated as agreement or disagreement.
+This raw count favors pairs with more mutually observed fields. In the public
+day-30 snapshots, only 36% to 46% of soft fields are observed across the ten
+pools. We therefore treat the score as a conservative ranking rule, not a
+calibrated compatibility probability.
+
+The seven fields have equal weight. This is a transparency choice, not a claim
+that every field has the same relationship with MSMI. Weighted, goal-only and
+learned alternatives failed to produce a repeatable holdout gain.
 
 Before day 20, the pair score is:
 
@@ -142,9 +155,16 @@ History quality contains two Bayesian-smoothed estimates:
 - the member's observed response rate; and
 - the member's Yes rate among recorded responses.
 
-The response prior is 0.765 and the acceptance prior is 0.46. Both priors have
-strength four. The policy adds the log-odds of the two estimates. Smoothing
-prevents one early response from controlling a member's score.
+The response prior is 0.765 and the acceptance prior is 0.46. Development
+rollouts produced rates close to these values. The later fixed training asset,
+which contains 18,149 introductions from 240 episodes, records rates of 0.7592
+and 0.4574. We chose prior strength four as a small-sample regularizer. It was
+not fitted by the final outcome model.
+
+The policy adds the log-odds of the two estimates. It clips each member's
+history contribution to the range -20 to 20. A pair's history term is therefore
+between -40 and 40. One compatibility point is worth 100, so history cannot
+override a full compatibility-point difference on one edge.
 
 The factor of 100 keeps observed compatibility dominant on an individual edge.
 History normally breaks close choices instead of overriding a full
@@ -169,6 +189,11 @@ global total policy score >= greedy total policy score
 ```
 
 If either condition fails, the policy returns the greedy batch.
+
+We measured this branch on seeds 5301-5303 across all six scenario families.
+The global batch ran on 26 of 1,080 decision days. It ran on 4.45% of the 584
+days that had at least one feasible edge. The branch is active but uncommon. It
+did not run in the sparse scenario during this telemetry block.
 
 ## Missing and delayed information
 
@@ -234,6 +259,14 @@ The larger independent blocks favored guarded history, but the small public
 block favored the previous method. We therefore treat the gain as uncertain,
 not guaranteed.
 
+A 20,000-resample paired bootstrap on the 120-episode holdout estimated a 95%
+interval from -0.0167 to 0.0583 for the score difference. The interval includes
+zero. The holdout contains five more MSMI outcomes for guarded history, but it
+does not establish a statistically clear improvement. We retain guarded history
+as the score-seeking default because its point estimate improved and no scenario
+family mean fell on this holdout. `adaptive_legacy` remains the conservative
+alternative.
+
 ### Rejected pair-specific methods
 
 We trained direct and decomposed outcome models on 18,149 introductions from
@@ -251,14 +284,23 @@ questions, sparse-zone asks, early feedback, exact maximum-weight experiments,
 and explore-first bandit policies. Small development wins did not survive fresh
 seed blocks.
 
+We also tested partial credit for missing soft fields. Credit 0.25 scored 0.5333
+versus 0.5000 on a 30-episode screen. It then lost 0.4500 versus 0.5000 on a
+fresh 60-episode confirmation. Credit 0.50 lost the first screen. We kept both
+variants out of the submission policy.
+
 ## Selection rule
 
-We promote a method only when it:
+We select a competition default only when it:
 
 1. Beats the incumbent on a matched development screen.
 2. Repeats the gain on a fresh untouched block.
 3. Preserves episode validity and reciprocal constraints.
 4. Remains deterministic, offline, and within the published limits.
+
+We also report a paired 95% confidence interval. An interval above zero supports
+a strong improvement claim. An interval that includes zero means the measured
+gain remains uncertain, even when the point estimate wins.
 
 We do not select a method from one favorable seed. We record rejected methods
 in `docs/DECISIONS.md` and keep them out of the submission runtime.
@@ -268,6 +310,9 @@ in `docs/DECISIONS.md` and keep them out of the submission runtime.
 - MSMI outcomes are rare, so the measured difference between two policies has
   high variance.
 - General member history does not predict one specific pair reliably.
+- The measured history gain has a paired 95% interval that includes zero.
+- Equal soft-field counts favor pairs with more observed answers.
+- Clarification follows state order rather than graph value.
 - Sparse geography can leave very few feasible edges.
 - Cold-start members have no behavior history.
 - The local quality step does not prove a maximum-weight matching among all
@@ -293,7 +338,7 @@ docker build -t sequential-policy:submission .
 python evaluate.py --image sequential-policy:submission --seeds 101 --variants development --output results/container_check.json
 ```
 
-The current repository passes 57 tests. `verify_data.py` verifies all 2,000
+The current repository passes 61 tests. `verify_data.py` verifies all 2,000
 profiles and 71 published files. The submission image passed the isolated
 seed-101 development check and remained below the 2 GiB image limit.
 
@@ -304,8 +349,8 @@ constraint, uses delayed feedback only after observation, and improves pool
 allocation without trusting a complex score that failed holdout testing.
 
 We do not claim a guaranteed winning score or a reliable score of 0.9. Our claim
-is narrower: guarded history and safe global allocation are the strongest
-rules-compliant method that survived our matched-seed experiments.
+is narrower: guarded history has the best selected point estimate, while its
+advantage over the no-history ablation remains statistically uncertain.
 
 ## Final checklist
 

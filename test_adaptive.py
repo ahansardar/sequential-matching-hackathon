@@ -6,6 +6,7 @@ import random
 import unittest
 
 from adaptive import (
+    HISTORY_MEMBER_LIMIT,
     _feedback_history,
     _history_quality,
     _maximum_cardinality,
@@ -126,6 +127,22 @@ class AdaptivePolicyTests(unittest.TestCase):
             {"response_trials": 1, "responses": 1, "accept_trials": 1, "accepts": 0},
         )
         self.assertGreater(_history_quality(histories["a"]), _history_quality(histories["b"]))
+
+    def test_history_quality_is_explicitly_bounded(self):
+        positive = _history_quality({
+            "response_trials": 1_000_000,
+            "responses": 1_000_000,
+            "accept_trials": 1_000_000,
+            "accepts": 1_000_000,
+        })
+        negative = _history_quality({
+            "response_trials": 1_000_000,
+            "responses": 0,
+            "accept_trials": 1_000_000,
+            "accepts": 0,
+        })
+        self.assertEqual(positive, HISTORY_MEMBER_LIMIT)
+        self.assertEqual(negative, -HISTORY_MEMBER_LIMIT)
 
     def test_history_signal_starts_on_day_twenty(self):
         fields = {

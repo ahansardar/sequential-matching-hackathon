@@ -157,3 +157,19 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   guard tied the incumbent at 0.2833 and tied coverage, but reduced mutual
   acceptances per 100 from 5.2583 to 5.2417. Neither challenger passed the
   promotion rule.
+
+## D-013: Bound history and reject missing-field credit
+
+- **Status:** accepted for submission runtime
+- **Date:** 8 October 2026
+- **Decision:** Clip each member's history contribution to -20 through 20. Keep
+  equal observed soft-field counts and the existing clarification rule. Add
+  allocation telemetry and report the paired confidence interval.
+- **Reason:** The bound guarantees that history cannot override one full
+  compatibility-point difference. It does not bind during valid public
+  episodes. A missing-field credit of 0.25 won a 30-episode screen by 0.0333,
+  then lost a fresh 60-episode confirmation by 0.0500. Credit 0.50 lost its
+  screen. The day-20 history holdout gain has a paired 95% bootstrap interval
+  from -0.0167 to 0.0583, so the report now labels the gain uncertain. On a
+  separate 18-episode telemetry block, global allocation ran on 4.45% of days
+  with at least one feasible edge.

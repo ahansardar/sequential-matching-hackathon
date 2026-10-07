@@ -11,17 +11,23 @@ The script uses only simulator observations. It is a fast research check. A
 successful candidate must still pass the official subprocess and container
 evaluation.
 
-## Promotion rule
+## Strong-evidence rule
 
-The script recommends promotion only when all four checks pass:
+The script marks `promote` true only when all four checks pass:
 
 1. Every episode from both policies is valid.
 2. The challenger's primary score is higher.
 3. The lower end of the paired 95% interval is above zero.
 4. No scenario family has a lower mean score.
 
-This is intentionally strict. If the interval includes zero, the experiment
-does not prove a reliable improvement.
+This is intentionally strict. The field is an evidence grade, not an automatic
+deployment command. If the interval includes zero, the experiment does not
+support a strong improvement claim. A competition team may still choose the
+higher point estimate, but it must label the gain uncertain.
+
+The day-20 history policy illustrates this distinction. It scored 0.2708 versus
+0.2500 on 120 untouched episodes, but its paired 95% interval was -0.0167 to
+0.0583. The strong-evidence gate fails because the interval includes zero.
 
 ## Example
 

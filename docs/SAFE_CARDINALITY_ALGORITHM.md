@@ -88,9 +88,13 @@ pair score = 100 * compatibility
 
 The priors are 0.765 for response and 0.46 for acceptance, each with strength
 four. They were fixed during development before the final 4001-4020 holdout.
-Smoothing stops one early answer from dominating a member's history. The factor
-of 100 keeps one observed compatibility point much larger than the history
-adjustment on an individual edge.
+The later training asset measured rates of 0.7592 and 0.4574 across 18,149
+introductions from 240 episodes. Strength four is a hand-chosen small-sample
+regularizer.
+
+The policy clips each member's history value to -20 through 20. A pair's history
+term is therefore between -40 and 40. The factor of 100 guarantees that history
+cannot override one full compatibility-point difference on an individual edge.
 
 Only feedback already present in the policy request is counted. A missing
 response counts as a response trial but not a response. Acceptance is measured
@@ -115,6 +119,10 @@ alternative total policy score >= greedy total policy score
 
 This guard prevents the global allocator from changing a batch merely because a
 different maximum matching exists.
+
+On seeds 5301-5303 across all six variants, the global batch ran on 26 of 1,080
+decision days. It ran on 4.45% of days with at least one feasible edge. The
+branch is active but uncommon.
 
 ## Why this design was selected
 
@@ -143,6 +151,8 @@ holdout covering all six variants. This is a measured gain of 0.0208, not proof
 of a private-evaluation win. On the small 18-episode public set, it scored
 0.3611 versus 0.3889 for the previous policy. The larger independent evidence
 favored the gated method, but the public loss shows that the gain is uncertain.
+On the 120-episode holdout, a 20,000-resample paired bootstrap interval for the
+score difference was -0.0167 to 0.0583. The interval includes zero.
 The search details are in
 `docs/SCORE_TARGET_ANALYSIS.md`.
 
@@ -193,6 +203,9 @@ well below the 2 GiB limit. The local proof is
 
 - More pairs do not guarantee more MSMI outcomes in a small stochastic episode.
 - Member history is sparse and noisy, especially shortly after day 20.
+- The history improvement is not statistically clear on the untouched holdout.
+- Equal soft-field counts favor pairs with more observed answers.
+- Clarification selects the first eligible records in state order.
 - The history signal estimates each person's general behavior, not their
   response to one particular partner.
 - Cold-start and sparse pools can still have very few feasible edges.

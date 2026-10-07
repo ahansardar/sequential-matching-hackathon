@@ -4,8 +4,8 @@ from __future__ import annotations
 from unittest import TestCase
 from unittest.mock import patch
 
-from experiments.search_observable_policy import _research_asks, _select_pairs
-from kit import Simulator, generate
+from experiments.search_observable_policy import _edges, _research_asks, _select_pairs
+from kit import Simulator, baseline_asks, generate
 
 
 class PolicySearchTests(TestCase):
@@ -62,6 +62,25 @@ class PolicySearchTests(TestCase):
         self.assertLessEqual(3 * len(asks), state["ask_budget_remaining"])
         self.assertEqual(len(asks), len({ask["member_id"] for ask in asks}))
         self.assertTrue(all(ask["field"] == "constraints" for ask in asks))
+
+    def test_missing_soft_credit_changes_only_research_edge_value(self):
+        simulator = Simulator(generate(4402, 80, "search_test", "cold_start"))
+        simulator.resolve_asks(baseline_asks(simulator.observe()))
+        state = simulator.observe()
+        base = {
+            "soft_weights": [100] * 7,
+            "signed_soft": False,
+            "response_weight": 0.0,
+            "accept_weight": 0.0,
+            "second_weight": 0.0,
+            "exploration_weight": 0.0,
+            "prior_scale": 1.0,
+            "threshold": -1e9,
+        }
+        without_credit = _edges(state, base)
+        with_credit = _edges(state, dict(base, missing_soft_credit=0.25))
+        self.assertEqual(without_credit.keys(), with_credit.keys())
+        self.assertTrue(all(with_credit[pair] >= without_credit[pair] for pair in without_credit))
 
 
 if __name__ == "__main__":
