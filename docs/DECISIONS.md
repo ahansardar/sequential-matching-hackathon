@@ -99,3 +99,17 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   members. Goal plus history scored 0.433, and full-funnel scoring plus history
   scored 0.383. The current policy therefore remains the best validated choice.
   Raw research outputs remain local under `results/` and are not runtime inputs.
+
+## D-009: Keep safe-cardinality after the 0.9 target search
+
+- **Status:** accepted
+- **Date:** 7 October 2026
+- **Decision:** Keep `adaptive` as the submission default. Retain the legal
+  observable-policy search runner, but do not add a history, waiting,
+  zone-targeting or two-phase bandit component to the runtime.
+- **Reason:** A 32-policy screen found a small response-history candidate, but
+  it lost the final 240-episode matched comparison. Safe-cardinality scored
+  0.2875 MSMI per 100 arrived members and the history candidate scored 0.2458.
+  Zone-focused questions and two-phase exploration also lost their screens.
+  A small five-seed block reached 0.833, showing that isolated high scores are
+  unstable. Full details are in `docs/SCORE_TARGET_ANALYSIS.md`.
