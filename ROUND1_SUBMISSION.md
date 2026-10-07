@@ -9,8 +9,6 @@
 - **Policy version:** `guarded-history-2.0`
 - **Prepared on:** 7 October 2026
 
-Do not add phone numbers, passwords, private profiles, or organiser-only data.
-
 ## Summary
 
 We treat the task as a sequential graph-matching problem. The policy must make
