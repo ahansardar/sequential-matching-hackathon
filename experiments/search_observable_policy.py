@@ -11,6 +11,7 @@ import itertools
 import json
 import math
 from pathlib import Path
+import statistics
 import sys
 import time
 
@@ -19,9 +20,21 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from adaptive import _pair_key, _safe_batch  # noqa: E402
+from adaptive import (  # noqa: E402
+    _compatibility_edges,
+    _pair_key,
+    _refine_quality,
+    _safe_batch,
+    select_pairs,
+)
 from evaluate import VARIANTS, summarise  # noqa: E402
 from kit import HARD, SOFT, Simulator, baseline_asks, eligibility, generate  # noqa: E402
+from outcome_model import (  # noqa: E402
+    feedback_history as model_feedback_history,
+    history_rates,
+    load_model,
+    score_pair,
+)
 
 
 PRIOR = {
@@ -122,6 +135,24 @@ def _edges(state, config):
         for member in members
     }
     edges = {}
+    model_logits = {}
+    model_histories = None
+    model = None
+    rates_by_member = None
+    model_active = (
+        config.get("pair_model")
+        and state.get("day", 0) >= config.get("pair_model_start_day", 0)
+    )
+    if model_active:
+        model = load_model()
+        model_histories = model_feedback_history(state)
+        rates_by_member = {
+            member["member_id"]: history_rates(
+                model_histories.get(member["member_id"]),
+                model,
+            )
+            for member in members
+        }
     for left, right in itertools.combinations(members, 2):
         pair = _pair_key(left["member_id"], right["member_id"])
         if pair in past or eligibility(left, right)["status"] != "feasible":
@@ -136,9 +167,65 @@ def _edges(state, config):
                 score += weight
             elif config["signed_soft"]:
                 score -= 0.5 * weight
+        formula_weights = config.get("pair_formula_weights")
+        if formula_weights:
+            formula_score = 0.0
+            for field, weight in zip(SOFT, formula_weights):
+                left_value = left["fields"].get(field)
+                right_value = right["fields"].get(field)
+                if left_value is None or right_value is None:
+                    continue
+                formula_score += weight * (1.0 if left_value == right_value else -0.5)
+            score += config.get("pair_formula_scale", 1.0) * formula_score
         if score >= config["threshold"]:
             edges[pair] = score
+            if model_active:
+                probability = score_pair(
+                    state,
+                    left,
+                    right,
+                    mode=config["pair_model"],
+                    model=model,
+                    histories=model_histories,
+                    rates_by_member=rates_by_member,
+                )
+                model_logits[pair] = _logit(probability)
+    if model_logits:
+        centre = statistics.median(model_logits.values())
+        confidence_trials = config.get("pair_confidence_trials", 0)
+        for pair, model_logit in model_logits.items():
+            confidence = 1.0
+            if confidence_trials:
+                trials = sum(
+                    histories.get(member_id, {}).get("response_trials", 0)
+                    for member_id in pair
+                )
+                confidence = min(1.0, trials / confidence_trials)
+            edges[pair] += (
+                config.get("pair_model_weight", 0.0)
+                * confidence
+                * (model_logit - centre)
+            )
     return edges
+
+
+def _select_pairs(state, edges, config):
+    if not config.get("protect_incumbent"):
+        return _safe_batch(edges)
+    incumbent, _ = select_pairs(state, mode="adaptive")
+    candidate = _refine_quality(incumbent, edges)
+    compatibility = _compatibility_edges(state)
+    candidate_compatibility = sum(compatibility[pair] for pair in candidate)
+    incumbent_compatibility = sum(compatibility[pair] for pair in incumbent)
+    if len(candidate) < len(incumbent):
+        return incumbent
+    if candidate_compatibility + 1e-12 < incumbent_compatibility:
+        return incumbent
+    if candidate == incumbent:
+        return incumbent
+    candidate_value = sum(edges[pair] for pair in candidate)
+    incumbent_value = sum(edges[pair] for pair in incumbent)
+    return candidate if candidate_value > incumbent_value + 1e-12 else incumbent
 
 
 def _research_asks(state, config):
@@ -163,6 +250,32 @@ def _research_asks(state, config):
         member for member in members
         if all(member.get("fields", {}).get(field) is not None for field in HARD)
     ]
+
+    if mode == "expected_unlock":
+        soft_weight = config.get("ask_soft_weight", 0.0)
+
+        def unlock_value(candidate, other):
+            if eligibility(candidate, other)["status"] == "infeasible":
+                return 0.0
+            comparisons = [
+                candidate.get("fields", {}).get(field)
+                == other.get("fields", {}).get(field)
+                for field in SOFT
+                if candidate.get("fields", {}).get(field) is not None
+                and other.get("fields", {}).get(field) is not None
+            ]
+            agreement = sum(comparisons) / len(comparisons) if comparisons else 0.0
+            return 1.0 + soft_weight * agreement
+
+        candidates.sort(key=lambda candidate: (
+            -sum(unlock_value(candidate, other) for other in known),
+            candidate.get("arrived_day", 0),
+            candidate["member_id"],
+        ))
+        return [
+            {"member_id": member["member_id"], "field": "constraints"}
+            for member in candidates[:state.get("ask_budget_remaining", 0) // 3]
+        ]
 
     def possible_degree(candidate):
         return sum(
@@ -274,6 +387,70 @@ def _configs():
         config["name"] = f"lex_equal_light_start_{start_day}"
         config["history_start_day"] = start_day
         configs.append(config)
+    history_components = (
+        ("lex_equal_response_20", 1.0, 0.0, 0.0),
+        ("lex_equal_response2_20", 2.0, 0.0, 0.0),
+        ("lex_equal_accept_20", 0.0, 1.0, 0.0),
+        ("lex_equal_accept2_20", 0.0, 2.0, 0.0),
+        ("lex_equal_second_20", 0.0, 0.0, 1.0),
+        ("lex_equal_all_history_20", 1.0, 1.0, 1.0),
+    )
+    for name, response, accept, second in history_components:
+        source = next(item for item in configs if item["name"] == "equal_none")
+        config = dict(source)
+        config.update({
+            "name": name,
+            "soft_weights": [100] * len(SOFT),
+            "response_weight": response,
+            "accept_weight": accept,
+            "second_weight": second,
+            "history_start_day": 20,
+        })
+        configs.append(config)
+    incumbent = next(item for item in configs if item["name"] == "lex_equal_light_start_20")
+    pair_candidates = (
+        ("pair_funnel_tie_1", "learned_funnel", 1.0, 20, 0),
+        ("pair_funnel_tie_3", "learned_funnel", 3.0, 20, 0),
+        ("pair_funnel_tie_10", "learned_funnel", 10.0, 20, 0),
+        ("pair_funnel_day0_3", "learned_funnel", 3.0, 0, 0),
+        ("pair_funnel_confidence_3", "learned_funnel", 3.0, 20, 4),
+        ("pair_static_tie_3", "learned_static", 3.0, 20, 0),
+        ("pair_history_direct_tie_3", "learned_history", 3.0, 20, 0),
+    )
+    for name, model_name, weight, start_day, confidence_trials in pair_candidates:
+        config = dict(incumbent)
+        config.update({
+            "name": name,
+            "pair_model": model_name,
+            "pair_model_weight": weight,
+            "pair_model_start_day": start_day,
+            "pair_confidence_trials": confidence_trials,
+            "protect_incumbent": True,
+        })
+        configs.append(config)
+    for soft_weight in (0.0, 0.5, 1.0):
+        config = dict(incumbent)
+        config.update({
+            "name": f"expected_unlock_asks_{soft_weight:g}",
+            "ask_mode": "expected_unlock",
+            "ask_soft_weight": soft_weight,
+        })
+        configs.append(config)
+    formula_candidates = (
+        ("pair_formula_robust_1", [0.625, 0.467, 0.167, 0.25, 0, 0, 0], 1.0),
+        ("pair_formula_robust_3", [0.625, 0.467, 0.167, 0.25, 0, 0, 0], 3.0),
+        ("pair_formula_robust_10", [0.625, 0.467, 0.167, 0.25, 0, 0, 0], 10.0),
+        ("pair_formula_standard_3", [0.7, 0.4, 0.25, 0.2, 0, 0, 0], 3.0),
+    )
+    for name, weights, scale in formula_candidates:
+        config = dict(incumbent)
+        config.update({
+            "name": name,
+            "pair_formula_weights": weights,
+            "pair_formula_scale": scale,
+            "protect_incumbent": True,
+        })
+        configs.append(config)
     return configs
 
 
@@ -283,8 +460,9 @@ def _episode(job):
     started = time.perf_counter()
     for _ in range(60):
         simulator.resolve_asks(_research_asks(simulator.observe(), config))
-        edges = _edges(simulator.observe(), config)
-        simulator.advance([list(pair) for pair in _safe_batch(edges)])
+        state = simulator.observe()
+        edges = _edges(state, config)
+        simulator.advance([list(pair) for pair in _select_pairs(state, edges, config)])
     arrived = {
         member["member_id"]
         for member in simulator.observe()["members"]

@@ -129,3 +129,16 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   gain is modest. It also lost 0.3611 versus 0.3889 on the much smaller
   18-episode public block. The mixed result does not guarantee a private score
   or competition win.
+
+## D-011: Reject the pair scorer and expected-unlock clarification
+
+- **Status:** rejected for submission runtime
+- **Date:** 7 October 2026
+- **Decision:** Keep `adaptive` unchanged. Retain the observable search
+  configurations and tests, but do not add the pair-specific funnel scorer,
+  expected-unlock asks or conservative pair formula to `policy.py`.
+- **Reason:** The funnel variants lost their first matched screen. Expected-
+  unlock asks won a 30-episode screen by 0.1333, then lost a fresh 60-episode
+  confirmation by 0.0500. The pair formula tied its screen and won a fresh
+  confirmation by 0.0167, then lost the 120-episode final holdout by 0.0417.
+  Full results are in `docs/PAIR_SCORER_EXPERIMENT.md`.

@@ -83,3 +83,10 @@ Promote the day-20 guarded-history policy because its gain repeated on a fresh
 holdout. Do not claim that it will score 0.9 or guarantee a win. The measured
 gain is small, one small public block favored the previous policy, and hidden
 evaluation worlds may behave differently.
+
+## Follow-up improvement search
+
+We later tested pair-specific full-funnel scoring, expected-unlock clarification
+and a conservative pair formula. The best formula won one 60-episode
+confirmation but lost the final 120-episode holdout, 0.3792 to 0.4208. None was
+promoted. See `docs/PAIR_SCORER_EXPERIMENT.md`.

@@ -45,6 +45,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, history gate, safety guard, evidence and ablations |
 | [docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md) | Learned-scoring experiment, training split and rejection evidence |
+| [docs/PAIR_SCORER_EXPERIMENT.md](docs/PAIR_SCORER_EXPERIMENT.md) | Pair scorer, clarification and conservative formula rejection evidence |
 | [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Rejected prototype retained as experiment history |
 | [frontend/](frontend/) | Plain local viewer for profiles, policy output and evaluation runs |
 | [examples/baseline_results/](examples/baseline_results/) | Checked reference runs for all three baselines |
