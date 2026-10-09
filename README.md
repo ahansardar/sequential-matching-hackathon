@@ -10,7 +10,7 @@ Build a policy that decides who to introduce, when to wait and what to clarify, 
 > available through the `upstream` Git remote so rule corrections can be reviewed
 > separately from team work.
 
-The current Round 1 research note is [ROUND1_SUBMISSION.md](ROUND1_SUBMISSION.md).
+The current Round 1 research note is available as [Markdown](ROUND1_SUBMISSION.md) and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf).
 
 ## Start here
 
