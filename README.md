@@ -10,6 +10,8 @@ Build a policy that decides who to introduce, when to wait and what to clarify, 
 > available through the `upstream` Git remote so rule corrections can be reviewed
 > separately from team work.
 
+The current Round 1 research note is available as [Markdown](ROUND1_SUBMISSION.md) and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf).
+
 ## Start here
 
 1. Read the [final problem statement](PROBLEM_STATEMENT.md) or [download the PDF](docs/PROBLEM_STATEMENT.pdf).
@@ -33,7 +35,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [data_manifest.json](data_manifest.json) | Pool counts, source seeds and train/validation/development-test split |
 | [docs/DATA_CONTRACT.md](docs/DATA_CONTRACT.md) | Every field, constraint and feedback rule |
 | [docs/POLICY_INTERFACE.md](docs/POLICY_INTERFACE.md) | Executable JSON request/response protocol |
-| [policy.py](policy.py) | Runnable greedy, no-clarification and random-feasible baselines |
+| [policy.py](policy.py) | Runnable guarded-history competition policy and supplied baselines |
 | [evaluate.py](evaluate.py) | 60-day episodes, 40-day follow-up, metrics and scenario-level score |
 | [build_public_data.py](build_public_data.py) | Rebuild public synthetic tables in a new folder |
 | [kit.py](kit.py) | Reproducible public simulator and reciprocal eligibility checks |
@@ -43,6 +45,12 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/SUBMISSION.md](docs/SUBMISSION.md) | Complete research and build submission instructions |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
+| [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, history gate, safety guard, evidence and ablations |
+| [docs/CONFIDENCE_AUDIT.md](docs/CONFIDENCE_AUDIT.md) | Matched-seed uncertainty checks and the evidence rule used for claims |
+| [docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md) | Learned-scoring experiment, training split and rejection evidence |
+| [docs/PAIR_SCORER_EXPERIMENT.md](docs/PAIR_SCORER_EXPERIMENT.md) | Pair scorer, clarification and conservative formula rejection evidence |
+| [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Rejected prototype retained as experiment history |
+| [frontend/](frontend/) | Plain local viewer for profiles, policy output and evaluation runs |
 | [examples/baseline_results/](examples/baseline_results/) | Checked reference runs for all three baselines |
 | [examples/REPORT_GUIDE.md](examples/REPORT_GUIDE.md) | What a complete participant technical report must cover |
 
@@ -50,13 +58,43 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 
 Edit `policy.py`, keeping the JSON interface. Observe only the input state. Refreshing observations after clarification is handled by the evaluator. Policy memory is passed explicitly between calls and reset between episodes.
 
+The default executable mode is the team's guarded-history safe-cardinality
+policy. Its previous-policy, greedy and always-maximum ablations are available
+as `adaptive_legacy`, `adaptive_greedy` and `adaptive_always_max`.
+
 ```bash
+python evaluate.py --baseline adaptive --seeds 101,102,103 --variants all --output results/adaptive.json
+python evaluate.py --baseline adaptive_legacy --seeds 101,102,103 --variants all --output results/adaptive_legacy.json
 python evaluate.py --baseline greedy --seeds 101,102,103 --variants all --output results/greedy.json
 python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --output results/no_asks.json
 python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/random.json
+python experiments/allocation_telemetry.py --seeds 5301,5302,5303 --variants all --output results/allocation_telemetry.json
+python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001,4002,4003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020 --variants all --resamples 20000 --output results/history_confidence.json
 ```
 
+The allocation audit measures how often the global maximum-cardinality guard
+actually changes a daily batch. The confidence audit reports matched-seed
+differences and a stratified bootstrap interval; its `promote` field is an
+evidence grade, not an automatic policy-selection command.
+
 The full commands take longer than the one-episode quick start. Public variants are `development`, `sparse`, `cold_start`, `delayed`, `shift`, and `drift`. Use your own declared training seeds. Keep the supplied six training pools, two validation pools and two development-test pools disjoint. Day-30 snapshots are not observations from earlier decisions.
+
+The rejected learned-scoring experiment used declared seeds 2001 through 2040
+for training. Its tuning and untouched evaluation blocks used different seeds.
+It is documented for reproducibility in
+[docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md), but it is
+not part of the submitted policy or Docker image.
+
+### Open the evaluation studio
+
+Build the local, observable-only dashboard data and start the static site:
+
+```bash
+python frontend/build_dashboard_data.py
+python -m http.server 8080 --directory frontend
+```
+
+Open `http://localhost:8080`. The viewer lets the team inspect all 2,000 public synthetic profiles, missing fields, clarification choices, feasible pair scores, selected daily batches and matched-seed evaluation results. It deliberately excludes latent simulator truth and private evaluation data. See [frontend/README.md](frontend/README.md) for details.
 
 To check container execution after installing Docker:
 

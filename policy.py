@@ -4,10 +4,13 @@ import itertools
 import json
 import random
 import sys
+from adaptive import decide as decide_adaptive
 from kit import baseline_asks, baseline_match, eligibility
 
 
 def decide(request, mode='greedy'):
+    if mode.startswith('adaptive'):
+        return decide_adaptive(request, mode)
     state = request['state']
     memory = request.get('memory') or {}
     if request['phase'] == 'ask':
@@ -32,7 +35,15 @@ def decide(request, mode='greedy'):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--baseline', choices=['greedy', 'no_asks', 'random'], default='greedy')
+    parser.add_argument(
+        '--baseline',
+        choices=[
+            'adaptive', 'adaptive_greedy', 'adaptive_always_max',
+            'adaptive_legacy',
+            'greedy', 'no_asks', 'random',
+        ],
+        default='adaptive',
+    )
     args = parser.parse_args()
     request = json.load(sys.stdin)
     print(json.dumps(decide(request, args.baseline), allow_nan=False))

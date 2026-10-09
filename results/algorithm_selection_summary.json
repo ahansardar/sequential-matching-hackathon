@@ -1,0 +1,82 @@
+{
+  "release": "1.0.0",
+  "selected_method": "adaptive",
+  "selected_policy": "safe-cardinality-1.0",
+  "selection_rule": "A replacement must improve an untouched matched-seed holdout and remain valid, deterministic and container-safe.",
+  "experiments": [
+    {
+      "question": "Should observed pair compatibility use goal-only scoring?",
+      "screen": {
+        "seeds": "1401-1410",
+        "episodes_per_method": 60,
+        "safe_cardinality_primary": 0.5166666666666667,
+        "goal_only_primary": 0.525
+      },
+      "untouched_holdout": {
+        "seeds": "1501-1520",
+        "episodes_per_method": 120,
+        "safe_cardinality_primary": 0.35833333333333334,
+        "goal_only_primary": 0.3375
+      },
+      "decision": "rejected"
+    },
+    {
+      "question": "Should response history break ties between equally compatible pairs?",
+      "public_check": {
+        "seeds": "101-103",
+        "episodes_per_method": 18,
+        "safe_cardinality_primary": 0.3888888888888889,
+        "response_tiebreak_primary": 0.3888888888888889
+      },
+      "screen": {
+        "seeds": "1601-1610",
+        "episodes_per_method": 60,
+        "safe_cardinality_primary": 0.3416666666666667,
+        "response_tiebreak_primary": 0.39166666666666666
+      },
+      "first_holdout": {
+        "seeds": "1701-1720",
+        "episodes_per_method": 120,
+        "safe_cardinality_primary": 0.32916666666666666,
+        "response_tiebreak_primary": 0.35833333333333334
+      },
+      "final_untouched_holdout": {
+        "seeds": "1801-1820",
+        "episodes_per_method": 120,
+        "safe_cardinality_primary": 0.3666666666666667,
+        "response_tiebreak_primary": 0.3458333333333333,
+        "guarded_response_primary": 0.3416666666666667
+      },
+      "combined_independent_audit": {
+        "seeds": "1601-1820",
+        "episodes_per_method": 300,
+        "safe_cardinality_outcomes": 208,
+        "response_tiebreak_outcomes": 216,
+        "safe_cardinality_primary": 0.3466666666666667,
+        "response_tiebreak_primary": 0.36,
+        "paired_primary_delta": 0.013333333333333334,
+        "paired_95_percent_normal_interval": [
+          -0.020001680225211163,
+          0.046668346891877835
+        ],
+        "response_wins": 43,
+        "ties": 219,
+        "response_losses": 38
+      },
+      "decision": "rejected because the final untouched holdout lost and the paired interval includes zero"
+    },
+    {
+      "question": "Should the guarded maximum-cardinality allocator replace greedy allocation?",
+      "combined_independent_audit": {
+        "seeds": "1101-1110 and 1501-1520",
+        "episodes_per_method": 180,
+        "safe_cardinality_outcomes": 151,
+        "greedy_outcomes": 150,
+        "safe_cardinality_primary": 0.41944444444444445,
+        "greedy_primary": 0.4166666666666667
+      },
+      "decision": "retain safe-cardinality"
+    }
+  ],
+  "conclusion": "Safe-cardinality remains the strongest validated submission policy. More complex scoring and feedback variants did not produce a stable untouched-holdout improvement."
+}

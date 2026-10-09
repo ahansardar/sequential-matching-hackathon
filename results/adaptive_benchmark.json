@@ -1,0 +1,17 @@
+{
+  "baseline": "adaptive",
+  "seed": 101,
+  "variant": "development",
+  "calls": 120,
+  "latency_seconds": {
+    "mean": 0.1363049083332347,
+    "p95": 0.16551330000220332,
+    "maximum": 0.18334440000035102,
+    "limit": 10.0
+  },
+  "protocol_bytes": {
+    "maximum_request": 474833,
+    "maximum_response": 911,
+    "limit": 1048576
+  }
+}

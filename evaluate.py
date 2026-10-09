@@ -14,6 +14,8 @@ import uuid
 from kit import Simulator, generate, VERSION
 
 VARIANTS = ('development', 'sparse', 'cold_start', 'delayed', 'shift', 'drift')
+METHODS = ('adaptive', 'adaptive_greedy', 'adaptive_always_max', 'adaptive_legacy',
+           'greedy', 'no_asks', 'random')
 LIMIT = 1024 * 1024
 
 
@@ -134,7 +136,8 @@ def summarise(rows):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--policy', default='policy.py')
-    p.add_argument('--baseline', choices=['greedy', 'no_asks', 'random'], default='greedy')
+    p.add_argument('--baseline', choices=METHODS, default='greedy',
+                   help='Policy method or supplied baseline')
     p.add_argument('--image', help='Use isolated offline Docker execution instead of trusted local subprocesses')
     p.add_argument('--seeds', default='101', help='Comma-separated public experiment seeds')
     p.add_argument('--variants', default='development', help='Comma-separated variants, or all')

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local viewer for the sequential matching dataset and evaluation outputs.">
+  <title>Sequential Matching Data Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <strong>Sequential Matching Data Viewer</strong>
+      <span>Public synthetic data and local evaluation output</span>
+    </div>
+    <span class="local-label">Local only</span>
+  </header>
+
+  <nav class="tabs" aria-label="Viewer sections">
+    <button class="tab active" data-view="overview">Overview</button>
+    <button class="tab" data-view="dataset">Dataset</button>
+    <button class="tab" data-view="output">Policy output</button>
+    <button class="tab" data-view="runs">Evaluation runs</button>
+  </nav>
+
+  <main>
+    <section class="view active" id="view-overview">
+      <div class="page-heading">
+        <div><h1>Overview</h1><p>A plain view of what data is available and what the latest local runs produced.</p></div>
+        <div class="notice">All people and outcomes shown here are synthetic.</div>
+      </div>
+      <div class="summary-grid" id="overview-summary"></div>
+
+      <section class="card">
+        <div class="card-heading"><h2>Public data pools</h2><span>Day-30 observable snapshots</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pool</th><th>Members</th><th>Available</th><th>Introductions</th><th>Feedback events</th><th>Hard fields known</th><th>Soft fields known</th></tr></thead>
+            <tbody id="pool-overview-rows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-heading"><h2>Latest evaluation comparison</h2><span>Matched seeds 101–103, six public scenarios</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Run</th><th>Primary score</th><th>Coverage</th><th>Mutual / 100</th><th>Ask cost</th><th>Episodes</th><th>Valid</th></tr></thead>
+            <tbody id="overview-run-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="view" id="view-dataset">
+      <div class="page-heading"><div><h1>Dataset</h1><p>Inspect the exact observable profile fields supplied to a policy.</p></div></div>
+      <div class="filters">
+        <label>Pool<select id="pool-select"></select></label>
+        <label>Search<input id="member-search" type="search" placeholder="Member ID, zone or gender"></label>
+        <label>Availability<select id="availability-filter"><option value="all">All members</option><option value="available">Available</option><option value="unavailable">Unavailable</option></select></label>
+      </div>
+      <div class="summary-grid compact" id="dataset-summary"></div>
+      <section class="card">
+        <div class="card-heading"><h2>Profiles</h2><span id="member-count"></span></div>
+        <div class="table-wrap tall-table">
+          <table>
+            <thead><tr><th>Member ID</th><th>Age</th><th>Gender</th><th>Zone</th><th>Arrived</th><th>Available</th><th>Hard known</th><th>Soft known</th></tr></thead>
+            <tbody id="member-rows"></tbody>
+          </table>
+        </div>
+        <div class="table-actions"><button id="show-more-members">Show 50 more</button><span>Click a row for every observable field.</span></div>
+      </section>
+    </section>
+
+    <section class="view" id="view-output">
+      <div class="page-heading"><div><h1>Policy output</h1><p>Recommendations produced from one public day-30 snapshot. The page does not depend on how the policy is implemented.</p></div></div>
+      <div class="filters one-line"><label>Pool<select id="output-pool"></select></label></div>
+      <div class="summary-grid compact" id="output-summary"></div>
+
+      <div class="two-column">
+        <section class="card">
+          <div class="card-heading"><h2>Clarification requests</h2><span>Questions requested before matching</span></div>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>Member</th><th>Request</th><th>Cost</th></tr></thead><tbody id="ask-rows"></tbody></table></div>
+        </section>
+        <section class="card">
+          <div class="card-heading"><h2>Selected matches</h2><span>Non-overlapping reciprocal pairs</span></div>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>Member A</th><th>Member B</th><th>Status</th></tr></thead><tbody id="match-rows"></tbody></table></div>
+        </section>
+      </div>
+
+      <section class="card">
+        <div class="card-heading"><h2>Candidate pair scores</h2><span>Top 100 feasible edges; selected pairs are marked</span></div>
+        <div class="table-wrap tall-table"><table><thead><tr><th>Member A</th><th>Member B</th><th>Zone A</th><th>Zone B</th><th>Score</th><th>Selected</th></tr></thead><tbody id="edge-rows"></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <div class="card-heading"><h2>Observed feedback in snapshot</h2><span>Historical events available before this recommendation</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Event type</th><th>Count</th></tr></thead><tbody id="feedback-rows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="view" id="view-runs">
+      <div class="page-heading">
+        <div><h1>Evaluation runs</h1><p>Open a saved result file and inspect its aggregate, scenario, and episode-level output.</p></div>
+        <div class="notice warning">Public simulator evidence, not a private leaderboard result.</div>
+      </div>
+      <div class="filters one-line"><label>Saved run<select id="run-select"></select></label></div>
+      <div class="summary-grid compact" id="run-summary"></div>
+
+      <section class="card">
+        <div class="card-heading"><h2>Scenario results</h2><span>Means from matched public seeds</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Scenario</th><th>MSMI / 100</th><th>Coverage</th><th>Mutual / 100</th><th>Ask cost</th></tr></thead><tbody id="scenario-rows"></tbody></table></div>
+      </section>
+
+      <section class="card">
+        <div class="card-heading"><h2>Episode output</h2><span>One row per seed and scenario</span></div>
+        <div class="table-wrap tall-table"><table><thead><tr><th>Seed</th><th>Scenario</th><th>Valid</th><th>Assignments</th><th>Mutual</th><th>Dates</th><th>MSMI</th><th>Coverage</th><th>Ask cost</th><th>Missing feedback</th></tr></thead><tbody id="episode-rows"></tbody></table></div>
+      </section>
+    </section>
+  </main>
+
+  <aside class="drawer" id="member-drawer" aria-hidden="true">
+    <div class="drawer-header"><strong>Observable member record</strong><button id="drawer-close" aria-label="Close member details">Close</button></div>
+    <div id="drawer-content"></div>
+  </aside>
+  <div class="scrim" id="drawer-scrim"></div>
+
+  <footer>Generated from committed public snapshots and saved local result files. Hidden simulator truth is not exported.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

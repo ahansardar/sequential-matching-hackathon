@@ -1,4 +1,5 @@
 """Release regressions for pair-level scoring and the frozen arrival denominator."""
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 from evaluate import episode
@@ -6,6 +7,15 @@ from kit import Simulator, generate
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_docker_context_includes_every_runtime_file(self):
+        rules = {
+            line.strip()
+            for line in Path('.dockerignore').read_text(encoding='utf-8').splitlines()
+            if line.strip() and not line.lstrip().startswith('#')
+        }
+        for filename in ('kit.py', 'adaptive.py', 'policy.py', 'Dockerfile'):
+            self.assertIn(f'!{filename}', rules)
+
     def test_one_successful_pair_is_one_outcome(self):
         world = generate(42, 2)
         for member in world['members']:

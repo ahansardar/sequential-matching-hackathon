@@ -1,4 +1,5 @@
 *
 !kit.py
+!adaptive.py
 !policy.py
 !Dockerfile
