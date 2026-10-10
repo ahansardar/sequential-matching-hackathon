@@ -9,7 +9,7 @@
   "submitted_policy_mode": "adaptive_greedy",
   "evidence_revision": "1be722f78e945ae5fbb05da34ffa487321dc44a5",
   "remote_revision_checked": true,
-  "report_markdown_sha256": "a592407bfb29f0b26186e2bea7b6f0fefca15b9c01c2a6731fd583ec36f1ee09",
+  "report_markdown_sha256": "ad021cef31e3f43728dc9b503a9fd18cc33d9cc2d840317a4de8a78e06618caa",
   "evidence_files": [
     "corrected_allocation_outcomes.json",
     "corrected_clarification_order.json",

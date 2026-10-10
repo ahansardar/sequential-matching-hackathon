@@ -98,9 +98,10 @@ def run(check_remote=False):
     revision = _evidence_revision()
     remote_checked = False
     if check_remote:
-        remote_heads = _run("git", "ls-remote", "origin")
-        if revision not in remote_heads:
-            raise AssertionError("pinned evidence revision is not available on the remote")
+        # ls-remote lists ref tips, not older commits that are still reachable
+        # from a branch. Fetching the exact object verifies the immutable link.
+        _run("git", "fetch", "--quiet", "--no-tags", "origin", revision)
+        _run("git", "cat-file", "-e", f"{revision}^{{commit}}")
         remote_checked = True
     counts = {
         state: sum(row[2] == state for row in rows)

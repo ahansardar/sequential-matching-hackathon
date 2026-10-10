@@ -50,7 +50,7 @@ The variant mean differences were 0.0500 in development, 0.0500 in drift,
 this block, but the overall gain is not established. We therefore retract any
 wording that treats history as a proven improvement.
 
-Evidence: [`results/corrected_history_seed_grouped.json`](results/corrected_history_seed_grouped.json)
+Evidence: [`results/corrected_history_seed_grouped.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_history_seed_grouped.json)
 
 ## 2. Directional probability definitions and calibration
 
@@ -139,7 +139,7 @@ These probabilities are not the policy's compatibility score. They are kept
 outside the runtime unless they beat the constant training-prevalence baseline
 and remain calibrated on new seed groups.
 
-Evidence: [`results/corrected_directional_calibration.json`](results/corrected_directional_calibration.json)
+Evidence: [`results/corrected_directional_calibration.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_directional_calibration.json)
 
 ## 3. Service by profile completeness
 
@@ -207,8 +207,8 @@ prove that the soft fields cause the gap. Arrival order, availability, hard
 constraints and the simulator's generated population can also contribute.
 
 Evidence:
-[`results/corrected_profile_completeness.json`](results/corrected_profile_completeness.json) and
-[`results/corrected_profile_completeness_all_masked.json`](results/corrected_profile_completeness_all_masked.json)
+[`results/corrected_profile_completeness.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_profile_completeness.json) and
+[`results/corrected_profile_completeness_all_masked.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_profile_completeness_all_masked.json)
 
 ## 4. Guarded cardinality and completed outcomes
 
@@ -233,8 +233,8 @@ outcomes. We therefore do not use introductions created, internal edge score or
 runtime as evidence of relationship success.
 
 Evidence:
-[`results/corrected_allocation_outcomes.json`](results/corrected_allocation_outcomes.json) and
-[`results/corrected_safe_cardinality_no_history.json`](results/corrected_safe_cardinality_no_history.json)
+[`results/corrected_allocation_outcomes.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_allocation_outcomes.json) and
+[`results/corrected_safe_cardinality_no_history.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_safe_cardinality_no_history.json)
 
 ## 5. Clarification order
 
@@ -269,9 +269,9 @@ across 120 order-only permutations covering members, introductions, feedback,
 ask logs and constraint arrays. We adopt the stable rule as an order-invariance
 fix, not as a claimed MSMI improvement.
 
-Evidence: [`results/corrected_clarification_order.json`](results/corrected_clarification_order.json),
-[`results/corrected_member_order.json`](results/corrected_member_order.json) and
-[`results/edge_case_audit.json`](results/edge_case_audit.json)
+Evidence: [`results/corrected_clarification_order.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_clarification_order.json),
+[`results/corrected_member_order.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_member_order.json) and
+[`results/edge_case_audit.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/edge_case_audit.json)
 
 ## 6. Edge cases and safeguards
 
@@ -298,7 +298,7 @@ Evidence: [`results/corrected_clarification_order.json`](results/corrected_clari
 | Public code accidentally depends on hidden truth | Policy code receives only the documented observable request and runs offline. |
 
 The fuller runtime, timing, service and evidence matrix is in
-[`docs/EDGE_CASE_REGISTER.md`](docs/EDGE_CASE_REGISTER.md).
+[`docs/EDGE_CASE_REGISTER.md`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/docs/EDGE_CASE_REGISTER.md).
 
 An extra matched test changed only equal-score tie ordering so earlier arrivals
 were preferred. It scored **0.5083** versus **0.5417** for the submitted rule;
@@ -315,8 +315,8 @@ MSMI per 100, about four times the observed 0.0208 difference. For the stable
 member-order correction, leaving out one seed can change the sign. These checks
 support conservative selection rather than a score claim.
 
-Evidence: [`results/corrected_wait_tie.json`](results/corrected_wait_tie.json),
-[`results/corrected_sensitivity.json`](results/corrected_sensitivity.json)
+Evidence: [`results/corrected_wait_tie.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_wait_tie.json),
+[`results/corrected_sensitivity.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/corrected_sensitivity.json)
 
 ## 7. Fixed 33-item closure
 
@@ -329,7 +329,22 @@ estimate them would invent evidence. The policy does not use that quantity.
 The executable closure audit checks the row count and states, corrected result
 files, selected runtime mode, container file whitelist, report-source hash,
 PDF presence and pinned remote evidence revision. The complete register is
-[`docs/EDGE_CASE_CLOSURE.md`](docs/EDGE_CASE_CLOSURE.md).
+[`docs/EDGE_CASE_CLOSURE.md`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/docs/EDGE_CASE_CLOSURE.md).
+
+### Evidence index
+
+All links below are pinned to the immutable evidence commit used for this report.
+
+| Item | GitHub source |
+|---|---|
+| Evaluated runtime | [`policy.py`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/policy.py) |
+| Container definition | [`Dockerfile`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/Dockerfile) |
+| Independent addendum validator | [`experiments/validate_corrected_addendum.py`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/experiments/validate_corrected_addendum.py) |
+| Registered seed families | [`experiments/seed_registry.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/experiments/seed_registry.json) |
+| Reproduction scripts | [`experiments/`](https://github.com/ahansardar/sequential-matching-hackathon/tree/ccf554fc48933d538c56c594e68ece9671239b75/experiments) |
+| Edge-case closure audit | [`results/closure_audit.json`](https://github.com/ahansardar/sequential-matching-hackathon/blob/ccf554fc48933d538c56c594e68ece9671239b75/results/closure_audit.json) |
+| Complete result directory | [`results/`](https://github.com/ahansardar/sequential-matching-hackathon/tree/ccf554fc48933d538c56c594e68ece9671239b75/results) |
+| Immutable evidence revision | [`ccf554f`](https://github.com/ahansardar/sequential-matching-hackathon/commit/ccf554fc48933d538c56c594e68ece9671239b75) |
 
 ## 8. Revised policy claim
 
