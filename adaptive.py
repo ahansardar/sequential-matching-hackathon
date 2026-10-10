@@ -24,10 +24,31 @@ def _pair_key(left, right):
     return tuple(sorted((left, right)))
 
 
+def _unique_consistent_members(state):
+    """Keep one row per ID, excluding conflicting duplicate records.
+
+    The public contract provides unique member IDs. Excluding a malformed,
+    conflicting duplicate is safer than choosing whichever copy happens to
+    appear first and preserves order invariance at the policy boundary.
+    """
+    grouped = collections.defaultdict(list)
+    for member in state.get("members", []):
+        if not isinstance(member, dict):
+            continue
+        member_id = member.get("member_id")
+        if isinstance(member_id, str):
+            grouped[member_id].append(member)
+    return [
+        rows[0]
+        for rows in grouped.values()
+        if all(row == rows[0] for row in rows[1:])
+    ]
+
+
 def _available_with_known_constraints(state):
     return sorted(
         (
-            member for member in state.get("members", [])
+            member for member in _unique_consistent_members(state)
             if member.get("available")
             and all(member.get("fields", {}).get(field) is not None for field in HARD)
         ),
@@ -331,10 +352,7 @@ def _graph_aware_asks(state):
     clarification can make the edge decidable. Equal scores preserve the
     observable state order, making this an isolated ordering ablation.
     """
-    members = [
-        member for member in state.get("members", [])
-        if member.get("available")
-    ]
+    members = [member for member in _unique_consistent_members(state) if member.get("available")]
     candidates = [
         (position, member)
         for position, member in enumerate(members)
@@ -367,13 +385,12 @@ def _graph_aware_asks(state):
 def _stable_constraint_asks(state):
     """Return an order-invariant, duplicate-safe hard-constraint ask batch."""
     candidates = {}
-    for member in state.get("members", []):
+    for member in _unique_consistent_members(state):
         member_id = member.get("member_id")
         fields = member.get("fields", {})
         statuses = member.get("field_status", {})
         if (
             not isinstance(member_id, str)
-            or member_id in candidates
             or not member.get("available")
             or not any(fields.get(field) is None for field in HARD)
             or any(statuses.get(field) == "declined" for field in HARD)

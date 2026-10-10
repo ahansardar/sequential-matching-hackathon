@@ -35,9 +35,14 @@ organiser feedback, and the failure paths we can reach in this repository.
 | Ask budgets 3 through 11 | Submit only the number of complete bundles that fit. | Floor division and boundary tests. |
 | Ask budget 12 | Submit at most four hard bundles. | Boundary tests. |
 | Duplicate member row | Do not emit duplicate asks. | Ask candidates are keyed by member ID. |
+| Conflicting duplicate member rows | Exclude that ID instead of trusting the first copy. | Consistency grouping and reversed-order test. |
 | Old, scalar or list memory | Reinitialize safe policy memory. | Memory type guard and tests. |
+| Exact request is replayed | Return the same action and compact memory. | Idempotence and memory-size test. |
 | Extra future JSON fields | Ignore fields the v1 policy does not use. | Forward-compatibility test. |
+| Ignored future data brings the request near 1 MiB | Parse it inside the time limit without echoing it into memory. | Near-limit real-process test. |
 | Python hash randomization changes | Return byte-equivalent actions under different `PYTHONHASHSEED` values. | Two-process determinism test. |
+| Several pools and a reversed historical pair coexist | Never cross pools or repeat the historical pair. | Combined boundary test. |
+| Unusual valid-state combinations | Preserve availability, feasibility, novelty and non-overlap invariants. | Eighty deterministic randomized states. |
 | Empty, sparse and dense graphs | Stay deterministic and within the public limits. | Edge-case audit plus release container check. |
 | Non-finite output | Never emit NaN or Infinity. | `allow_nan=False` and response validation. |
 | Protocol noise | Write one JSON object to stdout. | Real-process tests and container evaluation. |
@@ -54,6 +59,10 @@ organiser feedback, and the failure paths we can reach in this repository.
 | Second intention on day 3 after the date | Count it inside the MSMI window. | Inclusive boundary test. |
 | Second intention after day 3 | Do not count MSMI. | Strict event helper. |
 | Event before assignment or before the date | Do not count it. | Lower-bound checks. |
+| Date occurs before both positive responses | Keep mutual acceptance but do not count a date or MSMI. | Causal-order check. |
+| Member-scoped event names a third person | Reject the evidence as corrupted. | Endpoint validation. |
+| Pair-level date event names a member | Reject the evidence as corrupted. | Pair-level actor validation. |
+| JSON boolean appears where a day integer is required | Do not treat it as day 0 or 1. | Exact integer-type check. |
 | No response at the deadline | Label the defined Yes-by-deadline event as 0, not personal dislike. | Target definition retained in the report. |
 | Recent unresolved introduction | Keep it out of mature calibration labels. | Forty-day follow-up and maturity assertion. |
 | Duplicate or contradictory event | Reject the evidence instead of choosing a convenient record. | Strict one-event-per-type/member check. |

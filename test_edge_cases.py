@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import random
 import subprocess
 import sys
 import time
@@ -12,7 +13,7 @@ import unittest
 from adaptive import decide, plan_asks
 from evaluate import invoke
 from experiments.outcome_events import classify_funnel, recorded_yes_by_deadline
-from kit import HARD, SOFT
+from kit import HARD, SOFT, eligibility
 
 
 def complete_member(member_id, gender="woman", arrived_day=0):
@@ -95,6 +96,22 @@ class EdgeCaseTests(unittest.TestCase):
             self.assertEqual(len(asks), expected)
             self.assertEqual(len({row["member_id"] for row in asks}), len(asks))
 
+    def test_conflicting_duplicate_member_is_excluded_independent_of_order(self):
+        original = complete_member("duplicate")
+        conflict = copy.deepcopy(original)
+        conflict["pool_id"] = "other"
+        peer = complete_member("peer")
+        for rows in ([original, conflict, peer], [conflict, peer, original]):
+            current = state(copy.deepcopy(rows))
+            response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+            self.assertEqual(response["pairs"], [])
+
+            for row in current["members"][:2]:
+                if row["member_id"] == "duplicate":
+                    row["fields"]["age_min"] = None
+                    row["field_status"]["age_min"] = "not_asked"
+            self.assertNotIn("duplicate", {ask["member_id"] for ask in plan_asks(current, "adaptive_greedy")})
+
     def test_non_mapping_memory_is_safely_reinitialized(self):
         empty = state([])
         for memory in ([], "stale", 7, True, {"bad": float("nan"), "blob": "x" * 100000}):
@@ -111,6 +128,65 @@ class EdgeCaseTests(unittest.TestCase):
             member["future_member_field"] = [1, 2, 3]
         request = lambda value: {"phase": "match", "state": value, "memory": None}
         self.assertEqual(decide(request(base), "adaptive_greedy"), decide(request(extended), "adaptive_greedy"))
+
+    def test_replayed_request_is_idempotent_and_memory_is_small(self):
+        current = state([complete_member(f"m{index:03d}") for index in range(40)])
+        request = {"phase": "match", "state": current, "memory": {"old": "value"}}
+        first = decide(copy.deepcopy(request), "adaptive_greedy")
+        second = decide(copy.deepcopy(request), "adaptive_greedy")
+        self.assertEqual(first, second)
+        self.assertLess(len(json.dumps(first["memory"], allow_nan=False).encode()), 1024)
+
+    def test_near_limit_ignored_payload_stays_valid(self):
+        current = state([complete_member("a"), complete_member("b")])
+        current["future_padding"] = "x" * 900_000
+        request = {"schema_version": "1.0.0", "phase": "match", "state": current, "memory": None}
+        self.assertLess(len(json.dumps(request).encode()), 1024 * 1024)
+        response, _ = invoke([sys.executable, "policy.py"], request, timeout=10)
+        self.assertEqual(response["pairs"], [["a", "b"]])
+
+    def test_mixed_pools_and_reversed_prior_pair_are_never_crossed(self):
+        members = [complete_member("a"), complete_member("b"), complete_member("c")]
+        members[2]["pool_id"] = "other"
+        current = state(members)
+        current["introductions"] = [{"user_a": "b", "user_b": "a"}]
+        response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+        self.assertEqual(response["pairs"], [])
+
+    def test_randomized_states_preserve_matching_invariants(self):
+        generator = random.Random(20261010)
+        for case in range(80):
+            members = []
+            for index in range(generator.randint(0, 35)):
+                member = complete_member(f"case{case:03d}_{index:03d}")
+                member["pool_id"] = f"pool{generator.randrange(3)}"
+                member["available"] = generator.random() > 0.2
+                if generator.random() < 0.25:
+                    field = generator.choice(HARD)
+                    member["fields"][field] = None
+                    member["field_status"][field] = "not_asked"
+                if generator.random() < 0.25:
+                    member["fields"]["relationship_goal"] = generator.choice([None, "long_term", "exploring"])
+                members.append(member)
+
+            current = state(members)
+            available_ids = [member["member_id"] for member in members if member["available"]]
+            generator.shuffle(available_ids)
+            current["introductions"] = [
+                {"user_a": available_ids[pos], "user_b": available_ids[pos + 1]}
+                for pos in range(0, min(len(available_ids) - 1, 6), 2)
+            ]
+            response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+            by_id = {member["member_id"]: member for member in members}
+            past = {tuple(sorted((row["user_a"], row["user_b"]))) for row in current["introductions"]}
+            used = set()
+            for pair in response["pairs"]:
+                self.assertEqual(pair, sorted(pair))
+                self.assertFalse(used.intersection(pair))
+                self.assertNotIn(tuple(pair), past)
+                self.assertTrue(all(by_id[member_id]["available"] for member_id in pair))
+                self.assertEqual(eligibility(by_id[pair[0]], by_id[pair[1]])["status"], "feasible")
+                used.update(pair)
 
     def test_dense_graph_real_process_stays_inside_wall_clock_limit(self):
         dense = state([complete_member(f"syn_{index:032x}") for index in range(200)])
@@ -188,6 +264,37 @@ class EdgeCaseTests(unittest.TestCase):
         duplicate = before_assignment + [dict(before_assignment[0])]
         with self.assertRaises(ValueError):
             recorded_yes_by_deadline(intro, duplicate, "a")
+
+    def test_invalid_event_actors_boolean_days_and_causal_order_are_rejected(self):
+        intro = {
+            "introduction_id": "i", "user_a": "a", "user_b": "b",
+            "assigned_day": 10, "response_deadline_day": 17,
+        }
+        outsider = [{
+            "event": "introduction_response", "member_id": "c", "value": "yes",
+            "occurred_day": 11, "observed_day": 11,
+        }]
+        with self.assertRaises(ValueError):
+            recorded_yes_by_deadline(intro, outsider, "a")
+
+        boolean_day = [{
+            "event": "introduction_response", "member_id": "a", "value": "yes",
+            "occurred_day": True, "observed_day": True,
+        }]
+        self.assertFalse(recorded_yes_by_deadline(intro, boolean_day, "a"))
+
+        impossible = [
+            {"event": "introduction_response", "member_id": "a", "value": "yes", "occurred_day": 13, "observed_day": 13},
+            {"event": "introduction_response", "member_id": "b", "value": "yes", "occurred_day": 14, "observed_day": 14},
+            {"event": "date_happened", "member_id": None, "value": True, "occurred_day": 12, "observed_day": 12},
+        ]
+        self.assertEqual(classify_funnel(intro, impossible), {
+            "mutual_acceptance": True, "date_happened": False, "msmi": False,
+        })
+
+        wrong_date_actor = [dict(impossible[-1], member_id="a")]
+        with self.assertRaises(ValueError):
+            classify_funnel(intro, wrong_date_actor)
 
 
 if __name__ == "__main__":
