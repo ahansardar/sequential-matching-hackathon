@@ -1,7 +1,7 @@
 # LuminaX Round 1 corrected evidence addendum
 
-**Team:** LuminaX  
-**Members:** Ahan Sardar and Enakshee Mondal  
+**Team:** LuminaX
+**Members:** Ahan Sardar and Enakshee Mondal
 **Date:** 10 October 2026
 
 ## Purpose
