@@ -31,15 +31,15 @@ The addendum, code, independent result validator and raw JSON outputs are in
 the repository links below:
 
 - Fixed evidence commit:
-  https://github.com/ahansardar/sequential-matching-hackathon/commit/55d06f266f0418894a209c7531a0698746e36d65
+  https://github.com/ahansardar/sequential-matching-hackathon/commit/d068901f75490e85aa86f7ae795f848d14cb43f4
 - Corrected Markdown addendum:
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/55d06f266f0418894a209c7531a0698746e36d65/ROUND1_CORRECTED_ADDENDUM.md
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/ROUND1_CORRECTED_ADDENDUM.md
 - Corrected PDF:
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/55d06f266f0418894a209c7531a0698746e36d65/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf
 - Raw outputs and independent validator:
-  https://github.com/ahansardar/sequential-matching-hackathon/tree/55d06f266f0418894a209c7531a0698746e36d65/results
+  https://github.com/ahansardar/sequential-matching-hackathon/tree/d068901f75490e85aa86f7ae795f848d14cb43f4/results
   and
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/55d06f266f0418894a209c7531a0698746e36d65/experiments/validate_corrected_addendum.py
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/experiments/validate_corrected_addendum.py
 
 The new evidence weakens some of our original claims. We have kept those
 negative results in the report and aligned the final policy conclusion with
