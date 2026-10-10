@@ -306,6 +306,11 @@ def select_pairs(state, mode="adaptive"):
     if mode == "adaptive_greedy":
         edges = compatibility
         pairs = _greedy_pairs(compatibility)
+    elif mode == "adaptive_history_greedy":
+        # Research-only allocator ablation. It keeps the selected policy's
+        # history score and changes only the allocation step.
+        edges = _scored_edges(state)
+        pairs = _greedy_pairs(edges)
     elif mode == "adaptive_always_max":
         edges = compatibility
         pairs = _maximum_quality_batch(compatibility)
@@ -318,7 +323,50 @@ def select_pairs(state, mode="adaptive"):
     return pairs, edges
 
 
-def plan_asks(state):
+def _graph_aware_asks(state):
+    """Prioritise asks that can unlock the most one-step feasible edges.
+
+    The rule uses only the current observation. A candidate gets credit only
+    for another member whose hard constraints are already complete, so one
+    clarification can make the edge decidable. Equal scores preserve the
+    observable state order, making this an isolated ordering ablation.
+    """
+    members = [
+        member for member in state.get("members", [])
+        if member.get("available")
+    ]
+    candidates = [
+        (position, member)
+        for position, member in enumerate(members)
+        if any(member.get("fields", {}).get(field) is None for field in HARD)
+        and not any(
+            member.get("field_status", {}).get(field) == "declined"
+            for field in HARD
+        )
+    ]
+    known = [
+        member for member in members
+        if all(member.get("fields", {}).get(field) is not None for field in HARD)
+    ]
+
+    def unlock_degree(member):
+        return sum(
+            other["member_id"] != member["member_id"]
+            and eligibility(member, other)["status"] != "infeasible"
+            for other in known
+        )
+
+    ranked = sorted(candidates, key=lambda item: (-unlock_degree(item[1]), item[0]))
+    count = state.get("ask_budget_remaining", 0) // 3
+    return [
+        {"member_id": member["member_id"], "field": "constraints"}
+        for _, member in ranked[:count]
+    ]
+
+
+def plan_asks(state, mode="adaptive"):
+    if mode == "adaptive_graph_asks":
+        return _graph_aware_asks(state)
     return baseline_asks(state)
 
 
@@ -327,7 +375,7 @@ def decide(request, mode="adaptive"):
     memory = request.get("memory") or {}
     if request["phase"] == "ask":
         return {
-            "asks": plan_asks(state),
+            "asks": plan_asks(state, mode=mode),
             "memory": {"policy": VERSION, "day": state.get("day", 0)},
         }
 

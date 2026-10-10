@@ -10,7 +10,10 @@ Build a policy that decides who to introduce, when to wait and what to clarify, 
 > available through the `upstream` Git remote so rule corrections can be reviewed
 > separately from team work.
 
-The current Round 1 research note is available as [Markdown](ROUND1_SUBMISSION.md) and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf).
+The original Round 1 research note is available as [Markdown](ROUND1_SUBMISSION.md)
+and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf). The
+organiser-feedback response is the [corrected evidence addendum](ROUND1_CORRECTED_ADDENDUM.md)
+with a [PDF copy](output/pdf/LuminaX_Round1_Corrected_Addendum.pdf).
 
 ## Start here
 
@@ -35,7 +38,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [data_manifest.json](data_manifest.json) | Pool counts, source seeds and train/validation/development-test split |
 | [docs/DATA_CONTRACT.md](docs/DATA_CONTRACT.md) | Every field, constraint and feedback rule |
 | [docs/POLICY_INTERFACE.md](docs/POLICY_INTERFACE.md) | Executable JSON request/response protocol |
-| [policy.py](policy.py) | Runnable guarded-history competition policy and supplied baselines |
+| [policy.py](policy.py) | Runnable corrected competition policy and named research ablations |
 | [evaluate.py](evaluate.py) | 60-day episodes, 40-day follow-up, metrics and scenario-level score |
 | [build_public_data.py](build_public_data.py) | Rebuild public synthetic tables in a new folder |
 | [kit.py](kit.py) | Reproducible public simulator and reciprocal eligibility checks |
@@ -58,18 +61,21 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 
 Edit `policy.py`, keeping the JSON interface. Observe only the input state. Refreshing observations after clarification is handled by the evaluator. Policy memory is passed explicitly between calls and reset between episodes.
 
-The default executable mode is the team's guarded-history safe-cardinality
-policy. Its previous-policy, greedy and always-maximum ablations are available
-as `adaptive_legacy`, `adaptive_greedy` and `adaptive_always_max`.
+The default executable mode is `adaptive_greedy`: reciprocal feasibility,
+observed compatibility and deterministic greedy allocation. The history and
+guarded-cardinality method remains available as `adaptive`, the no-history
+guarded allocator as `adaptive_legacy`, and always-maximum allocation as
+`adaptive_always_max`. They are research ablations, not the corrected default.
 
 ```bash
+python evaluate.py --baseline adaptive_greedy --seeds 101,102,103 --variants all --output results/adaptive_greedy.json
 python evaluate.py --baseline adaptive --seeds 101,102,103 --variants all --output results/adaptive.json
 python evaluate.py --baseline adaptive_legacy --seeds 101,102,103 --variants all --output results/adaptive_legacy.json
 python evaluate.py --baseline greedy --seeds 101,102,103 --variants all --output results/greedy.json
 python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --output results/no_asks.json
 python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/random.json
 python experiments/allocation_telemetry.py --seeds 5301,5302,5303 --variants all --output results/allocation_telemetry.json
-python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001,4002,4003,4004,4005,4006,4007,4008,4009,4010,4011,4012,4013,4014,4015,4016,4017,4018,4019,4020 --variants all --resamples 20000 --output results/history_confidence.json
+python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001-4020 --variants all --resamples 20000 --output results/history_confidence.json
 ```
 
 The allocation audit measures how often the global maximum-cardinality guard

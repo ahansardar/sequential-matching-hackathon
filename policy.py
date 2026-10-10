@@ -42,7 +42,7 @@ if __name__ == '__main__':
             'adaptive_legacy',
             'greedy', 'no_asks', 'random',
         ],
-        default='adaptive',
+        default='adaptive_greedy',
     )
     args = parser.parse_args()
     request = json.load(sys.stdin)

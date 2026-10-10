@@ -10,13 +10,14 @@ from adaptive import (
     _feedback_history,
     _history_quality,
     _maximum_cardinality,
+    _graph_aware_asks,
     _safe_batch,
     _scored_edges,
     decide,
     plan_asks,
     select_pairs,
 )
-from kit import Simulator, baseline_asks, baseline_match, eligibility, generate
+from kit import HARD, SOFT, Simulator, baseline_asks, baseline_match, eligibility, generate
 
 
 class AdaptivePolicyTests(unittest.TestCase):
@@ -81,6 +82,68 @@ class AdaptivePolicyTests(unittest.TestCase):
         self.assertEqual(len({(row["member_id"], row["field"]) for row in first}), len(first))
         cost = sum(3 if row["field"] == "constraints" else 1 for row in first)
         self.assertLessEqual(cost, state["ask_budget_remaining"])
+
+    def test_graph_aware_asks_prioritise_a_one_step_unlock(self):
+        known_fields = {
+            "age_min": 18, "age_max": 40, "who_to_meet": ["woman"],
+            "relationship_structure": "monogamous", "smoking": "no",
+            "partner_smoking": "any", "has_children": False,
+            "partner_children": "any", "wants_children": "unsure",
+            "acceptable_zones": ["zone_a"], "schedule": ["weekend_day"],
+            **{field: None for field in SOFT},
+        }
+
+        def missing(member_id, gender):
+            return {
+                "member_id": member_id, "pool_id": "test", "age": 25,
+                "gender": gender, "zone": "zone_a", "available": True,
+                "fields": {**{field: None for field in HARD},
+                           **{field: None for field in SOFT}},
+                "field_status": {field: "not_asked" for field in HARD + SOFT},
+            }
+
+        known = {
+            "member_id": "known", "pool_id": "test", "age": 25,
+            "gender": "man", "zone": "zone_a", "available": True,
+            "fields": known_fields,
+            "field_status": {field: "observed" for field in HARD + SOFT},
+        }
+        blocked_first = missing("blocked", "man")
+        unlock_second = missing("unlock", "woman")
+        state = {
+            "ask_budget_remaining": 3,
+            "members": [blocked_first, unlock_second, known],
+        }
+        self.assertEqual(
+            _graph_aware_asks(state),
+            [{"member_id": "unlock", "field": "constraints"}],
+        )
+
+    def test_graph_aware_asks_handle_small_budget_declines_and_ties(self):
+        def incomplete(member_id, status="not_asked"):
+            return {
+                "member_id": member_id,
+                "available": True,
+                "fields": {field: None for field in HARD},
+                "field_status": {field: status for field in HARD},
+            }
+
+        tied_first = incomplete("first")
+        tied_second = incomplete("second")
+        declined = incomplete("declined", status="declined")
+        state = {
+            "ask_budget_remaining": 2,
+            "members": [declined, tied_first, tied_second],
+        }
+        self.assertEqual(_graph_aware_asks(state), [])
+        state["ask_budget_remaining"] = 6
+        self.assertEqual(
+            _graph_aware_asks(state),
+            [
+                {"member_id": "first", "field": "constraints"},
+                {"member_id": "second", "field": "constraints"},
+            ],
+        )
 
     def test_selected_pairs_are_valid_non_overlapping_and_deterministic(self):
         simulator = Simulator(generate(3002, 80, "test", "development"))

@@ -1,4 +1,4 @@
-"""Run a paired policy comparison with a stratified bootstrap interval."""
+"""Run a paired policy comparison with a seed-clustered bootstrap interval."""
 from __future__ import annotations
 
 import argparse
@@ -31,33 +31,56 @@ def _percentile(values, probability):
     return ordered[lower] * (1.0 - fraction) + ordered[upper] * fraction
 
 
-def paired_analysis(incumbent_rows, challenger_rows, resamples=10000, seed=1701):
+def paired_analysis(
+    incumbent_rows,
+    challenger_rows,
+    resamples=10000,
+    seed=1701,
+    metric="msmi_per_100_arrived_members",
+):
     if resamples < 1:
         raise ValueError("resamples must be positive")
+    if not incumbent_rows or not challenger_rows:
+        raise ValueError("Policies must contain at least one paired episode")
     key = lambda row: (row["variant"], row["seed"])
     incumbent = {key(row): row for row in incumbent_rows}
     challenger = {key(row): row for row in challenger_rows}
+    if len(incumbent) != len(incumbent_rows) or len(challenger) != len(challenger_rows):
+        raise ValueError("Policies must not contain duplicate variant and seed rows")
     if incumbent.keys() != challenger.keys():
         raise ValueError("Policies must have identical variant and seed rows")
     deltas = {
-        pair: challenger[pair]["msmi_per_100_arrived_members"]
-        - incumbent[pair]["msmi_per_100_arrived_members"]
+        pair: challenger[pair][metric] - incumbent[pair][metric]
         for pair in incumbent
     }
+    variants = sorted({variant for variant, _ in deltas})
+    seeds = sorted({episode_seed for _, episode_seed in deltas})
+    expected = {(variant, episode_seed) for variant in variants for episode_seed in seeds}
+    if set(deltas) != expected:
+        raise ValueError(
+            "Every seed group must contain the same complete set of variants"
+        )
     by_variant = {
-        variant: [value for (name, _), value in deltas.items() if name == variant]
-        for variant in sorted({variant for variant, _ in deltas})
+        variant: [deltas[(variant, episode_seed)] for episode_seed in seeds]
+        for variant in variants
     }
     generator = random.Random(seed)
     bootstrap = []
     for _ in range(resamples):
-        family_means = []
-        for values in by_variant.values():
-            sample = [generator.choice(values) for _ in values]
-            family_means.append(statistics.mean(sample))
+        # A generated seed defines one world under all scenario variants. Sample
+        # that whole six-variant group together so correlated worlds never count
+        # as independent observations.
+        sampled_seeds = [generator.choice(seeds) for _ in seeds]
+        family_means = [
+            statistics.mean(deltas[(variant, episode_seed)] for episode_seed in sampled_seeds)
+            for variant in variants
+        ]
         bootstrap.append(statistics.mean(family_means))
     return {
+        "metric": metric,
         "paired_episodes": len(deltas),
+        "seed_groups": len(seeds),
+        "variants_per_seed": len(variants),
         "mean_primary_delta": statistics.mean(
             statistics.mean(values) for values in by_variant.values()
         ),
@@ -66,7 +89,9 @@ def paired_analysis(incumbent_rows, challenger_rows, resamples=10000, seed=1701)
             for variant, values in by_variant.items()
         },
         "bootstrap": {
-            "method": "paired stratified percentile",
+            "method": "paired percentile bootstrap clustered by seed",
+            "resampling_unit": "whole seed group with every scenario variant",
+            "scenario_weighting": "equal weight after within-variant seed means",
             "resamples": resamples,
             "seed": seed,
             "confidence_level": 0.95,
@@ -95,6 +120,15 @@ def promotion_gate(incumbent_summary, challenger_summary, analysis):
     }
 
 
+def _parse_seeds(value):
+    if "-" in value and "," not in value:
+        start, end = (int(part) for part in value.split("-"))
+        if end < start:
+            raise ValueError("seed range end must not be below its start")
+        return list(range(start, end + 1))
+    return [int(part) for part in value.split(",")]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--incumbent", default="adaptive")
@@ -110,7 +144,10 @@ def main():
         default=ROOT / "results" / "confidence_audit.json",
     )
     args = parser.parse_args()
-    seeds = [int(value) for value in args.seeds.split(",")]
+    try:
+        seeds = _parse_seeds(args.seeds)
+    except ValueError as error:
+        parser.error(str(error))
     variants = list(VARIANTS) if args.variants == "all" else args.variants.split(",")
     if not seeds or not variants or any(variant not in VARIANTS for variant in variants):
         parser.error("Choose at least one seed and recognized variant")

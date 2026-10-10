@@ -1,6 +1,10 @@
 # Guarded-history safe-cardinality policy
 
-Status: current competition policy.
+Status: research ablation; not the corrected container default.
+
+The corrected 10 October addendum retracts promotion of the history and guarded
+cardinality components. See `ROUND1_CORRECTED_ADDENDUM.md` and decision D-014.
+The implementation remains available so the negative result is reproducible.
 
 This policy builds on the validated safe-cardinality method. It tries to serve
 more people in each daily batch. From day 20, it also uses observed response and

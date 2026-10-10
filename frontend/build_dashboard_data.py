@@ -69,7 +69,7 @@ def summarize_pool(pool_id, state):
 
 def build_pool_detail(pool_id, state):
     asks = plan_asks(state)
-    selected_pairs, edges = select_pairs(state)
+    selected_pairs, edges = select_pairs(state, mode="adaptive_greedy")
     selected = set(selected_pairs)
     by_id = {m["member_id"]: m for m in state["members"]}
     edge_rows = []
@@ -124,7 +124,7 @@ def load_experiments(results_dir):
         methods.append({
             "id": method_id,
             "label": {
-                "adaptive": "Guarded-history policy",
+                "adaptive": "Historical guarded-history policy",
                 "adaptive_always_max": "Ablation · always maximum cardinality",
                 "cavia": "CAVIA",
                 "greedy": "Greedy baseline",

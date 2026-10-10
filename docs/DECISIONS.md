@@ -173,3 +173,17 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   from -0.0167 to 0.0583, so the report now labels the gain uncertain. On a
   separate 18-episode telemetry block, global allocation ran on 4.45% of days
   with at least one feasible edge.
+
+## D-014: Retract history and guarded-cardinality promotion
+
+- **Status:** accepted for the corrected submission runtime
+- **Date:** 10 October 2026
+- **Decision:** Make `adaptive_greedy` the container default. Keep the history
+  and guarded-cardinality modes only as named research ablations.
+- **Reason:** When all six variants from a generated seed are resampled as one
+  cluster, the 20-seed history difference is 0.0208 MSMI per 100 with a 95%
+  interval from -0.0375 to 0.0792. On a fresh no-history allocation block,
+  guarded cardinality ties greedy at 0.2750 MSMI per 100 but has lower coverage
+  (0.32825 versus 0.32867), the next official tie-break. It shortens median
+  first-service wait by 0.175 days, which is reported as a service trade-off
+  rather than evidence of better completed outcomes.
