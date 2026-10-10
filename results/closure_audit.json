@@ -7,20 +7,23 @@
     "contract-excluded": 1
   },
   "submitted_policy_mode": "adaptive_greedy",
-  "evidence_revision": "1be722f78e945ae5fbb05da34ffa487321dc44a5",
-  "remote_revision_checked": true,
-  "report_markdown_sha256": "ad021cef31e3f43728dc9b503a9fd18cc33d9cc2d840317a4de8a78e06618caa",
+  "release_ref": "round1-reconsideration-v1",
+  "release_url": "https://github.com/ahansardar/sequential-matching-hackathon/tree/round1-reconsideration-v1",
+  "remote_revision_checked": false,
+  "remote_check_status": "not_requested",
+  "report_markdown_sha256": "531cbb5a507aac24a4cff4867486c5907fa6be85e60be9d6f4728c940d852bc4",
+  "report_pdf_sha256": "b7ac8b300bf203262ffe296fc4ad3c7a1eff834ce1fa1aae42dead0a60ddb09c",
   "evidence_files": [
-    "corrected_allocation_outcomes.json",
-    "corrected_clarification_order.json",
-    "corrected_directional_calibration.json",
-    "corrected_history_seed_grouped.json",
-    "corrected_member_order.json",
-    "corrected_profile_completeness.json",
-    "corrected_profile_completeness_all_masked.json",
-    "corrected_safe_cardinality_no_history.json",
-    "corrected_sensitivity.json",
-    "corrected_wait_tie.json",
-    "edge_case_audit.json"
+    "results/corrected_allocation_outcomes.json",
+    "results/corrected_clarification_order.json",
+    "results/corrected_directional_calibration.json",
+    "results/corrected_history_seed_grouped.json",
+    "results/corrected_member_order.json",
+    "results/corrected_profile_completeness.json",
+    "results/corrected_profile_completeness_all_masked.json",
+    "results/corrected_safe_cardinality_no_history.json",
+    "results/corrected_sensitivity.json",
+    "results/corrected_wait_tie.json",
+    "results/edge_case_audit.json"
   ]
 }

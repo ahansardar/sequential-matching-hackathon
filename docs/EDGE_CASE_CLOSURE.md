@@ -43,9 +43,9 @@ No item below is pending.
 | 28 | Assignment-selection bias | contract-excluded | Outcomes exist only for assigned pairs. The report limits calibration claims to those pairs and makes no counterfactual claim about unassigned pairs. |
 | 29 | Rare-outcome instability | fixed | Raw event counts remain in episode outputs and all intervals cluster by independent seed world. |
 | 30 | Multiple algorithm search | measured | The seed ledger separates study roles; negative challengers are recorded and the final mode is not selected from one lucky block. |
-| 31 | Markdown, PDF and result parity | fixed | The release audit checks cited result files and a SHA-256 sidecar for the report source used to build the PDF. |
+| 31 | Markdown, PDF and result parity | fixed | The release audit checks cited result files plus both Markdown and PDF SHA-256 values against the sidecar. |
 | 32 | Dashboard staleness | fixed | The dashboard export declares `adaptive_greedy`, and a unit test locks it to the container default. |
-| 33 | Remote-link availability | fixed | The release audit checks the pinned evidence revision exists on the remote before the reply is published. |
+| 33 | Remote-link availability | fixed | One manifest release tag is used by the reply and report. Optional HTTPS verification reports unavailable networking without requiring Git or crashing. |
 
 The register closes engineering and evidence-handling risks within the
 published simulator contract. It does not promise a private score, real-world

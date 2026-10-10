@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "release_ref": "round1-reconsideration-v1",
+  "repository_url": "https://github.com/ahansardar/sequential-matching-hackathon",
+  "report_source": "ROUND1_CORRECTED_ADDENDUM.md",
+  "report_pdf": "output/pdf/LuminaX_Round1_Corrected_Addendum.pdf",
+  "report_sidecar": "output/pdf/LuminaX_Round1_Corrected_Addendum.source.sha256",
+  "evidence_files": [
+    "results/corrected_history_seed_grouped.json",
+    "results/corrected_allocation_outcomes.json",
+    "results/corrected_clarification_order.json",
+    "results/corrected_safe_cardinality_no_history.json",
+    "results/corrected_member_order.json",
+    "results/corrected_wait_tie.json",
+    "results/corrected_profile_completeness.json",
+    "results/corrected_profile_completeness_all_masked.json",
+    "results/corrected_directional_calibration.json",
+    "results/corrected_sensitivity.json",
+    "results/edge_case_audit.json"
+  ]
+}
