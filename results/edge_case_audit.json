@@ -14,7 +14,7 @@
   "empty_graph_pairs": 0,
   "dense_graph_members": 200,
   "dense_graph_pairs": 100,
-  "dense_graph_direct_seconds": 0.11445439999806695,
+  "dense_graph_direct_seconds": 0.1350209000011091,
   "limits": [
     "This is a deterministic adversarial audit, not evidence about private score.",
     "Container wall-clock and protocol isolation are checked separately by the release commands.",

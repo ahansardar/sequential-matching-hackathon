@@ -106,6 +106,28 @@ overpredicted by 2.63 percentage points. Shift and drift also overpredict by
 3.16 and 3.00 points. These subgroup checks are diagnostic point estimates,
 not independent causal comparisons.
 
+The subgroup uncertainty check resamples whole generated worlds. For complete
+profiles, calibration-in-the-large is **+0.0263**, with a 95% interval from
+**+0.0113 to +0.0405**. For the small 3-6 group it is **-0.0075**, with a much
+wider interval from **-0.2021 to +0.1564**. We therefore keep the complete-
+profile overprediction finding and suppress strong interpretation of the small
+group.
+
+Calibration also changes with assignment time:
+
+| Assignment day | Examples | Observed Yes | Mean prediction | Calibration gap | 95% interval for gap | Equal-count ECE |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0-19 | 5,262 | 36.35% | 36.57% | +0.21 points | -1.74 to +2.02 points | 2.30% |
+| 20-34 | 2,388 | 33.17% | 36.04% | +2.87 points | -1.21 to +6.26 points | 6.20% |
+| 35-59 | 1,938 | 30.60% | 35.95% | +5.36 points | +3.33 to +7.54 points | 5.57% |
+
+The late-period overprediction is clear in this holdout and is another reason
+not to put the estimator into the policy. Equal-count ECE is 3.03%, 3.19% and
+3.94% with 5, 10 and 20 bins respectively, so the conclusion does not depend
+on one bin count. We also cross profile completeness, candidate opportunity
+and assignment time: 12 cells meet the 200-example threshold and 11 are marked
+`suppressed_small_sample`. No suppressed cell is interpreted.
+
 The fitted model shows weak discrimination and a small, repeatable Brier
 improvement over the constant baseline. Its calibration-in-the-large remains
 wrong in the positive direction, subgroup calibration is uneven, and Platt
@@ -148,6 +170,21 @@ This shows that soft completeness is strongly tied to hard-information
 readiness in the generator. The saved output therefore includes cells crossing
 soft completeness, arrival day and observable partner opportunity instead of
 claiming that soft answers alone caused the service difference.
+
+The new whole-seed subgroup intervals keep that conclusion honest. Coverage is
+23.80% (95% interval 22.12%-25.70%) for the zero-field band, 23.02%
+(19.96%-26.06%) for 1-2 fields, 26.25% (17.91%-37.45%) for the small 3-6 band,
+and 50.52% (45.00%-55.23%) for complete profiles. The wide 3-6 interval shows
+why its point estimate cannot carry much weight.
+
+Service is also normalised by actual exposure. Introductions per 100 available-
+member-days are 1.01, 0.91, 1.09 and 2.42 across the four bands. Observable
+opportunity exists on 91.02%, 93.20%, 93.28% and 77.95% of available days.
+When members never served are included through the end of the 60-day decision
+window, mean days without a first introduction are 45.51, 45.46, 44.78 and
+30.32. Repeated service is concentrated too: members with two or more
+introductions number 534, 462, 37 and 1,062, while the maximum for one member
+is 8, 7, 5 and 8. These are descriptive service facts, not causal effects.
 
 In the paired 50% masking condition, MSMI changed by **+0.0583** with a
 seed-grouped 95% interval of **-0.0583 to 0.1750**. Coverage changed by
@@ -263,7 +300,38 @@ Evidence: [`results/corrected_clarification_order.json`](results/corrected_clari
 The fuller runtime, timing, service and evidence matrix is in
 [`docs/EDGE_CASE_REGISTER.md`](docs/EDGE_CASE_REGISTER.md).
 
-## 7. Revised policy claim
+An extra matched test changed only equal-score tie ordering so earlier arrivals
+were preferred. It scored **0.5083** versus **0.5417** for the submitted rule;
+the difference was **-0.0333**, with a 95% seed-grouped interval from
+**-0.1167 to +0.0500**. It also made p90 first-service wait **0.4533 days
+worse**, with an interval from **+0.0833 to +0.9383**. We reject it rather than
+using a fairness-sounding rule that failed its intended service check.
+
+Across all six corrected algorithm comparisons, the sensitivity audit reports
+paired seed-level means, exact two-sided sign-flip tests, leave-one-seed-out
+ranges and approximate 80% detectable effects. For the uncertain history gain,
+the exact p-value is 0.524 and the approximate detectable effect is 0.0844
+MSMI per 100, about four times the observed 0.0208 difference. For the stable
+member-order correction, leaving out one seed can change the sign. These checks
+support conservative selection rather than a score claim.
+
+Evidence: [`results/corrected_wait_tie.json`](results/corrected_wait_tie.json),
+[`results/corrected_sensitivity.json`](results/corrected_sensitivity.json)
+
+## 7. Fixed 33-item closure
+
+The requested closure boundary contains exactly 33 items. Each is marked
+`fixed`, `measured` or `contract-excluded`; none is pending. The only
+contract-excluded item is counterfactual calibration for unassigned pairs.
+Their outcomes are not observable under the published request, so claiming to
+estimate them would invent evidence. The policy does not use that quantity.
+
+The executable closure audit checks the row count and states, corrected result
+files, selected runtime mode, container file whitelist, report-source hash,
+PDF presence and pinned remote evidence revision. The complete register is
+[`docs/EDGE_CASE_CLOSURE.md`](docs/EDGE_CASE_CLOSURE.md).
+
+## 8. Revised policy claim
 
 The corrected container default is the stable-clarification compatibility-
 greedy method. We
@@ -283,7 +351,7 @@ What remains defensible is the boundary of the method:
    supports the component;
 6. return valid empty output when no safe action exists.
 
-## Reproduction and independent checks
+## 9. Reproduction and independent checks
 
 ```text
 python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001-4020 --variants all --workers 4 --resamples 20000 --output results/corrected_history_seed_grouped.json
@@ -291,11 +359,15 @@ python experiments/component_audit.py --incumbent adaptive_history_greedy --chal
 python experiments/component_audit.py --incumbent adaptive --challenger adaptive_graph_asks --seeds 6401-6410 --variants all --workers 4 --resamples 20000 --output results/corrected_clarification_order.json
 python experiments/component_audit.py --incumbent adaptive_greedy --challenger adaptive_legacy --seeds 6501-6510 --variants all --workers 2 --resamples 20000 --output results/corrected_safe_cardinality_no_history.json
 python experiments/component_audit.py --incumbent adaptive_input_order_greedy --challenger adaptive_greedy --seeds 7201-7220 --variants all --workers 4 --resamples 10000 --output results/corrected_member_order.json
+python experiments/component_audit.py --incumbent adaptive_greedy --challenger adaptive_wait_tie_greedy --seeds 7401-7410 --variants all --workers 4 --resamples 20000 --output results/corrected_wait_tie.json
 python experiments/profile_completeness_audit.py --seeds 6201-6210 --variants all --mask-rate 0.5 --workers 4 --resamples 20000 --output results/corrected_profile_completeness.json
 python experiments/profile_completeness_audit.py --seeds 6201-6210 --variants all --mask-rate 1 --workers 4 --resamples 20000 --input-unmasked results/corrected_profile_completeness.json --output results/corrected_profile_completeness_all_masked.json
 python experiments/directional_calibration.py --training-seeds 6001-6010 --calibration-seeds 6031-6040 --holdout-seeds 6101-6110 --variants all --workers 4 --resamples 5000 --output results/corrected_directional_calibration.json
 python experiments/edge_case_audit.py --output results/edge_case_audit.json
+python experiments/seed_registry.py
+python experiments/sensitivity_audit.py --output results/corrected_sensitivity.json
 python experiments/validate_corrected_addendum.py
+python experiments/closure_audit.py --remote --output results/closure_audit.json
 ```
 
 The final validator reloads saved JSON, rejects non-finite values, verifies
@@ -318,6 +390,8 @@ helper that produced the results.
   real user probabilities.
 - The calibration sample contains assigned introductions under one policy. It
   does not establish probability quality for every unassigned feasible pair.
+- A generated-world interval describes uncertainty across the tested worlds;
+  ten seed groups still leave low power for small effects and rare outcomes.
 - Several questions were tested. We show negative results and do not select a
   method only because one public block looks favourable.
 

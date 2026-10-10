@@ -1,0 +1,174 @@
+{
+  "status": "passed",
+  "interpretation": "A challenger is not promoted from these checks alone. Sign instability or weak exact evidence reinforces an uncertain conclusion.",
+  "studies": {
+    "history": {
+      "source": "corrected_history_seed_grouped.json",
+      "incumbent": "adaptive_legacy",
+      "challenger": "adaptive",
+      "seed_groups": 20,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": 0.020833333333333336,
+          "seed_group_standard_deviation": 0.1348461328038878,
+          "leave_one_seed_out_minimum": 0.0,
+          "leave_one_seed_out_maximum": 0.039473684210526314,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.5236473083496094,
+          "minimum_detectable_effect_80pct_approx": 0.08442703344668806
+        },
+        "coverage": {
+          "mean_difference": 0.0014166666666666666,
+          "seed_group_standard_deviation": 0.0024197651038674675,
+          "leave_one_seed_out_minimum": 0.0011842105263157896,
+          "leave_one_seed_out_maximum": 0.0017105263157894738,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.0178985595703125,
+          "minimum_detectable_effect_80pct_approx": 0.001515012593312259
+        }
+      }
+    },
+    "guarded_allocation": {
+      "source": "corrected_allocation_outcomes.json",
+      "incumbent": "adaptive_history_greedy",
+      "challenger": "adaptive",
+      "seed_groups": 10,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": -0.075,
+          "seed_group_standard_deviation": 0.19817843313041075,
+          "leave_one_seed_out_minimum": -0.10185185185185185,
+          "leave_one_seed_out_maximum": -0.02777777777777778,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.375,
+          "minimum_detectable_effect_80pct_approx": 0.17547466490833186
+        },
+        "coverage": {
+          "mean_difference": 0.00033333333333333365,
+          "seed_group_standard_deviation": 0.0018921540406584907,
+          "leave_one_seed_out_minimum": -0.00018518518518518537,
+          "leave_one_seed_out_maximum": 0.0006481481481481487,
+          "leave_one_seed_out_changes_sign": true,
+          "exact_two_sided_sign_flip_p_value": 0.75,
+          "minimum_detectable_effect_80pct_approx": 0.0016753846066640693
+        }
+      }
+    },
+    "clarification_order": {
+      "source": "corrected_clarification_order.json",
+      "incumbent": "adaptive",
+      "challenger": "adaptive_graph_asks",
+      "seed_groups": 10,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": -0.04166666666666667,
+          "seed_group_standard_deviation": 0.21960261528947078,
+          "leave_one_seed_out_minimum": -0.07407407407407408,
+          "leave_one_seed_out_maximum": -3.0839528461809902e-18,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.64453125,
+          "minimum_detectable_effect_80pct_approx": 0.19444444444444442
+        },
+        "coverage": {
+          "mean_difference": -0.0012499999999999998,
+          "seed_group_standard_deviation": 0.0027003086243366095,
+          "leave_one_seed_out_minimum": -0.0016666666666666668,
+          "leave_one_seed_out_maximum": -0.0008333333333333327,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.19140625,
+          "minimum_detectable_effect_80pct_approx": 0.002390955178723907
+        }
+      }
+    },
+    "safe_cardinality_no_history": {
+      "source": "corrected_safe_cardinality_no_history.json",
+      "incumbent": "adaptive_greedy",
+      "challenger": "adaptive_legacy",
+      "seed_groups": 10,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": 0.0,
+          "seed_group_standard_deviation": 0.05555555555555555,
+          "leave_one_seed_out_minimum": -0.009259259259259259,
+          "leave_one_seed_out_maximum": 0.009259259259259259,
+          "leave_one_seed_out_changes_sign": true,
+          "exact_two_sided_sign_flip_p_value": 1.0,
+          "minimum_detectable_effect_80pct_approx": 0.049190985824841445
+        },
+        "coverage": {
+          "mean_difference": -0.00041666666666666794,
+          "seed_group_standard_deviation": 0.001317615691736825,
+          "leave_one_seed_out_minimum": -0.0006481481481481498,
+          "leave_one_seed_out_maximum": -0.00018518518518518637,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.4375,
+          "minimum_detectable_effect_80pct_approx": 0.0011666666666666668
+        }
+      }
+    },
+    "stable_member_order": {
+      "source": "corrected_member_order.json",
+      "incumbent": "adaptive_input_order_greedy",
+      "challenger": "adaptive_greedy",
+      "seed_groups": 20,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": 0.020833333333333336,
+          "seed_group_standard_deviation": 0.27819778188898847,
+          "leave_one_seed_out_minimum": -0.008771929824561403,
+          "leave_one_seed_out_maximum": 0.04385964912280702,
+          "leave_one_seed_out_changes_sign": true,
+          "exact_two_sided_sign_flip_p_value": 0.7406101226806641,
+          "minimum_detectable_effect_80pct_approx": 0.17417936241816265
+        },
+        "coverage": {
+          "mean_difference": 0.0005416666666666656,
+          "seed_group_standard_deviation": 0.00375876169418655,
+          "leave_one_seed_out_minimum": 8.77192982456134e-05,
+          "leave_one_seed_out_maximum": 0.0009210526315789451,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.5320644378662109,
+          "minimum_detectable_effect_80pct_approx": 0.0023533570646385527
+        }
+      }
+    },
+    "equal_score_wait_tie": {
+      "source": "corrected_wait_tie.json",
+      "incumbent": "adaptive_greedy",
+      "challenger": "adaptive_wait_tie_greedy",
+      "seed_groups": 10,
+      "variants_per_seed": 6,
+      "method": "paired seed-level scenario means; exact sign-flip and leave-one-seed-out checks",
+      "metrics": {
+        "msmi_per_100_arrived_members": {
+          "mean_difference": -0.03333333333333333,
+          "seed_group_standard_deviation": 0.13721210039142742,
+          "leave_one_seed_out_minimum": -0.05555555555555555,
+          "leave_one_seed_out_maximum": -0.009259259259259259,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.5625,
+          "minimum_detectable_effect_80pct_approx": 0.12149277273632572
+        },
+        "coverage": {
+          "mean_difference": 0.0003333333333333355,
+          "seed_group_standard_deviation": 0.0022291558497487644,
+          "leave_one_seed_out_minimum": 2.0599841277224584e-18,
+          "leave_one_seed_out_maximum": 0.0007407407407407434,
+          "leave_one_seed_out_changes_sign": false,
+          "exact_two_sided_sign_flip_p_value": 0.72265625,
+          "minimum_detectable_effect_80pct_approx": 0.0019737787285143697
+        }
+      }
+    }
+  }
+}
