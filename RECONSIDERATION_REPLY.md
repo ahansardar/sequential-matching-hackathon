@@ -43,6 +43,8 @@ selection.
 
 Thank you for the precise feedback and for taking another look.
 
-Best,  
-Ahan Sardar and Enakshee Mondal  
+Best,
+
+Ahan Sardar and Enakshee Mondal
+
 Team LuminaX
