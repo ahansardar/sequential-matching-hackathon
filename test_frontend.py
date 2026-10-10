@@ -22,6 +22,7 @@ class DashboardExportTests(unittest.TestCase):
         cls.temp_dir.cleanup()
 
     def test_export_covers_every_public_profile(self):
+        self.assertEqual(self.payload["meta"]["policyMode"], "adaptive_greedy")
         self.assertEqual(len(self.payload["pools"]), 10)
         self.assertEqual(
             sum(len(pool["members"]) for pool in self.payload["poolDetails"].values()),

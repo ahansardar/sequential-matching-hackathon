@@ -214,3 +214,17 @@ submission. Add new entries; do not rewrite past decisions after results exist.
 - **Reason:** The first corrected evidence package explicitly called the old
   `adaptive` research mode. Careful statistics on the wrong policy would not
   answer the organiser's question about the submitted method.
+
+## D-017: Reject equal-score waiting priority
+
+- **Status:** rejected for submission runtime
+- **Date:** 10 October 2026
+- **Decision:** Keep the canonical equal-score pair tie-break in
+  `adaptive_greedy`. Retain the arrival-priority variant only as a named
+  research comparison.
+- **Reason:** Across seeds 7401-7410 and all six variants, arrival-priority
+  ties scored 0.5083 MSMI per 100 versus 0.5417 for the incumbent. The paired
+  difference was -0.0333, with a 95% seed-grouped interval from -0.1167 to
+  0.0500. It also increased the 90th-percentile first-service wait by 0.4533
+  days, with an interval from 0.0833 to 0.9383. The change neither improved
+  the primary objective nor its intended service measure.

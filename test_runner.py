@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from evaluate import docker_command, invoke, summarise, validate_response
+from evaluate import docker_command, episode, invoke, summarise, validate_response
 from kit import Simulator, generate
 from policy import decide
 
@@ -41,6 +41,12 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('--read-only', command)
         self.assertNotIn('-v', command)
         self.assertNotIn('--mount', command)
+
+    def test_episode_reports_per_call_latency_boundaries(self):
+        result = episode(generate(42, 0), [sys.executable, 'policy.py'])
+        self.assertEqual(result['policy_calls'], 120)
+        self.assertGreaterEqual(result['maximum_policy_call_seconds'], result['p95_policy_call_seconds'])
+        self.assertLess(result['maximum_policy_call_seconds'], 10)
 
     def test_observed_policy_never_receives_world_fields(self):
         sim = Simulator(generate(42, 80))

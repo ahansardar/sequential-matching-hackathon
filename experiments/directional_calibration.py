@@ -102,6 +102,14 @@ def _opportunity_band(count):
     return "5+"
 
 
+def _time_band(day):
+    if day < 20:
+        return "0-19"
+    if day < 35:
+        return "20-34"
+    return "35-59"
+
+
 def collect_episode(seed, variant):
     simulator = Simulator(generate(seed, 200, "directional_calibration", variant))
     memory = None
@@ -186,6 +194,7 @@ def collect_episode(seed, variant):
                 "history": snapshot[target]["history"],
                 "soft_observed_count": snapshot[target]["soft_observed_count"],
                 "candidate_opportunity_count": snapshot[target]["candidate_opportunity_count"],
+                "assigned_day": snapshot["assigned_day"],
             })
     return rows
 
@@ -379,6 +388,58 @@ def calibration_metrics(rows):
     }
 
 
+def ece_bin_sensitivity(rows, bin_counts=(5, 10, 20)):
+    return {
+        str(count): sum(
+            item["count"] / len(rows) * abs(item["mean_prediction"] - item["observed_rate"])
+            for item in _equal_count_bins(rows, count)
+        )
+        for count in bin_counts
+    }
+
+
+def intersectional_calibration_cells(rows, minimum_examples=200):
+    cells = []
+    keys = sorted({
+        (
+            _completeness_band(row["soft_observed_count"]),
+            _opportunity_band(row["candidate_opportunity_count"]),
+            _time_band(row["assigned_day"]),
+        )
+        for row in rows
+    })
+    for profile, opportunity, time_band in keys:
+        selected = [
+            row for row in rows
+            if _completeness_band(row["soft_observed_count"]) == profile
+            and _opportunity_band(row["candidate_opportunity_count"]) == opportunity
+            and _time_band(row["assigned_day"]) == time_band
+        ]
+        base = {
+            "profile_band": profile,
+            "opportunity_band": opportunity,
+            "assignment_day_band": time_band,
+            "examples": len(selected),
+            "positives": sum(row["label"] for row in selected),
+        }
+        if len(selected) < minimum_examples:
+            cells.append({**base, "status": "suppressed_small_sample"})
+        else:
+            metrics = calibration_metrics(selected)
+            cells.append({
+                **base,
+                "status": "reported",
+                "observed_rate": metrics["observed_rate"],
+                "mean_prediction": metrics["mean_prediction"],
+                "calibration_in_the_large": metrics["calibration_in_the_large"],
+                "brier_score": metrics["brier_score"],
+                "equal_count_expected_calibration_error": metrics[
+                    "equal_count_expected_calibration_error"
+                ],
+            })
+    return cells
+
+
 def _percentile(values, probability):
     ordered = sorted(values)
     position = probability * (len(ordered) - 1)
@@ -485,6 +546,85 @@ def seed_cluster_intervals(rows, resamples, bootstrap_seed):
                 "lower": _percentile(values, 0.025),
                 "upper": _percentile(values, 0.975),
             }
+            for name, values in samples.items()
+        },
+    }
+
+
+def subgroup_seed_cluster_intervals(rows, all_seeds, resamples, bootstrap_seed):
+    """Clustered intervals for a possibly sparse diagnostic subgroup."""
+    if not rows or not all_seeds or resamples < 1:
+        raise ValueError("subgroup intervals require rows, seeds and resamples")
+    ordered = sorted(rows, key=lambda row: row["prediction"])
+    bin_count = min(10, len(ordered))
+    bin_by_row = {
+        id(row): min(bin_count - 1, index * bin_count // len(ordered))
+        for index, row in enumerate(ordered)
+    }
+    by_seed = {}
+    for seed in all_seeds:
+        selected = [row for row in rows if row["seed"] == seed]
+        bins = [
+            {"count": 0, "prediction_sum": 0.0, "label_sum": 0.0}
+            for _ in range(bin_count)
+        ]
+        for row in selected:
+            item = bins[bin_by_row[id(row)]]
+            item["count"] += 1
+            item["prediction_sum"] += row["prediction"]
+            item["label_sum"] += row["label"]
+        by_seed[seed] = {
+            "count": len(selected),
+            "prediction_sum": sum(row["prediction"] for row in selected),
+            "label_sum": sum(row["label"] for row in selected),
+            "brier_sum": sum((row["prediction"] - row["label"]) ** 2 for row in selected),
+            "bins": bins,
+        }
+
+    def metrics(selected_seeds):
+        parts = [by_seed[seed] for seed in selected_seeds]
+        count = sum(part["count"] for part in parts)
+        if not count:
+            return None
+        bins = [
+            {
+                "count": sum(part["bins"][index]["count"] for part in parts),
+                "prediction_sum": sum(part["bins"][index]["prediction_sum"] for part in parts),
+                "label_sum": sum(part["bins"][index]["label_sum"] for part in parts),
+            }
+            for index in range(bin_count)
+        ]
+        prediction_sum = sum(part["prediction_sum"] for part in parts)
+        label_sum = sum(part["label_sum"] for part in parts)
+        return {
+            "observed_rate": label_sum / count,
+            "mean_prediction": prediction_sum / count,
+            "calibration_in_the_large": (prediction_sum - label_sum) / count,
+            "brier_score": sum(part["brier_sum"] for part in parts) / count,
+            "equal_count_expected_calibration_error": sum(
+                abs(item["prediction_sum"] - item["label_sum"])
+                for item in bins
+            ) / count,
+        }
+
+    generator = random.Random(bootstrap_seed)
+    samples = {name: [] for name in metrics(all_seeds)}
+    for _ in range(resamples):
+        measured = metrics([generator.choice(all_seeds) for _ in all_seeds])
+        if measured is None:
+            continue
+        for name, value in measured.items():
+            samples[name].append(value)
+    return {
+        "method": "percentile bootstrap clustered by seed; subgroup examples pooled across variants",
+        "seed_groups": len(all_seeds),
+        "seed_groups_with_examples": sum(by_seed[seed]["count"] > 0 for seed in all_seeds),
+        "examples": len(rows),
+        "resamples": resamples,
+        "bootstrap_seed": bootstrap_seed,
+        "ece_bins": "fixed holdout equal-count bins inside the subgroup",
+        "intervals": {
+            name: {"lower": _percentile(values, 0.025), "upper": _percentile(values, 0.975)}
             for name, values in samples.items()
         },
     }
@@ -637,6 +777,31 @@ def run_audit(
         for band in ("0", "1-4", "5+")
         if any(_opportunity_band(row["candidate_opportunity_count"]) == band for row in evaluated)
     }
+    profile_interval_rows = {
+        band: [
+            row for row in evaluated
+            if _completeness_band(row["soft_observed_count"]) == band
+        ]
+        for band in by_profile_completeness
+    }
+    opportunity_interval_rows = {
+        band: [
+            row for row in evaluated
+            if _opportunity_band(row["candidate_opportunity_count"]) == band
+        ]
+        for band in by_candidate_opportunity
+    }
+    by_assignment_day = {
+        band: calibration_metrics([
+            row for row in evaluated if _time_band(row["assigned_day"]) == band
+        ])
+        for band in ("0-19", "20-34", "35-59")
+        if any(_time_band(row["assigned_day"]) == band for row in evaluated)
+    }
+    assignment_day_interval_rows = {
+        band: [row for row in evaluated if _time_band(row["assigned_day"]) == band]
+        for band in by_assignment_day
+    }
     return {
         "design": {
             "targets": {
@@ -673,7 +838,29 @@ def run_audit(
             "by_target": by_target,
             "by_variant": by_variant,
             "by_profile_completeness": by_profile_completeness,
+            "by_profile_completeness_seed_cluster_intervals": {
+                band: subgroup_seed_cluster_intervals(
+                    rows, holdout_seeds, resamples, bootstrap_seed + 10 + index,
+                )
+                for index, (band, rows) in enumerate(profile_interval_rows.items())
+            },
             "by_candidate_opportunity": by_candidate_opportunity,
+            "by_candidate_opportunity_seed_cluster_intervals": {
+                band: subgroup_seed_cluster_intervals(
+                    rows, holdout_seeds, resamples, bootstrap_seed + 20 + index,
+                )
+                for index, (band, rows) in enumerate(opportunity_interval_rows.items())
+            },
+            "by_assignment_day": by_assignment_day,
+            "by_assignment_day_seed_cluster_intervals": {
+                band: subgroup_seed_cluster_intervals(
+                    rows, holdout_seeds, resamples, bootstrap_seed + 30 + index,
+                )
+                for index, (band, rows) in enumerate(assignment_day_interval_rows.items())
+            },
+            "intersectional_cells": intersectional_calibration_cells(evaluated),
+            "intersectional_minimum_examples": 200,
+            "ece_equal_count_bin_sensitivity": ece_bin_sensitivity(evaluated),
             "seed_cluster_intervals": seed_cluster_intervals(
                 evaluated, resamples, bootstrap_seed,
             ),
@@ -695,6 +882,7 @@ def run_audit(
                     "before_platt_prediction": raw["prediction"],
                     "soft_observed_count": calibrated["soft_observed_count"],
                     "candidate_opportunity_count": calibrated["candidate_opportunity_count"],
+                    "assigned_day": calibrated["assigned_day"],
                 }
                 for calibrated, raw in zip(evaluated, raw_evaluated)
             ],
@@ -735,7 +923,11 @@ def main():
     print(json.dumps({
         "output": str(args.output),
         "sample": payload["sample"],
-        "holdout": payload["holdout"],
+        "holdout_overall": payload["holdout"]["overall"],
+        "holdout_equal_variant": payload["holdout"]["equal_variant_overall"],
+        "assignment_day_groups": list(payload["holdout"]["by_assignment_day"]),
+        "intersectional_cells": len(payload["holdout"]["intersectional_cells"]),
+        "ece_bin_counts": list(payload["holdout"]["ece_equal_count_bin_sensitivity"]),
     }, indent=2))
 
 

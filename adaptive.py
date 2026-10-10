@@ -24,6 +24,35 @@ def _pair_key(left, right):
     return tuple(sorted((left, right)))
 
 
+def _member_observation_consistent(member, day):
+    fields = member.get("fields")
+    statuses = member.get("field_status")
+    observed_days = member.get("field_observed_day")
+    arrived = member.get("arrived_day")
+    if (
+        not isinstance(fields, dict)
+        or not isinstance(statuses, dict)
+        or not isinstance(observed_days, dict)
+        or type(arrived) is not int
+        or type(day) is not int
+        or arrived > day
+    ):
+        return False
+    for field in HARD + SOFT:
+        value = fields.get(field)
+        status = statuses.get(field)
+        observed_day = observed_days.get(field)
+        if status == "observed":
+            if value is None or type(observed_day) is not int or not arrived <= observed_day <= day:
+                return False
+        elif status in ("not_asked", "declined"):
+            if value is not None or observed_day is not None:
+                return False
+        else:
+            return False
+    return True
+
+
 def _unique_consistent_members(state):
     """Keep one row per ID, excluding conflicting duplicate records.
 
@@ -32,11 +61,12 @@ def _unique_consistent_members(state):
     appear first and preserves order invariance at the policy boundary.
     """
     grouped = collections.defaultdict(list)
+    day = state.get("day")
     for member in state.get("members", []):
         if not isinstance(member, dict):
             continue
         member_id = member.get("member_id")
-        if isinstance(member_id, str):
+        if isinstance(member_id, str) and _member_observation_consistent(member, day):
             grouped[member_id].append(member)
     return [
         rows[0]
@@ -49,7 +79,7 @@ def _available_with_known_constraints(state):
     return sorted(
         (
             member for member in _unique_consistent_members(state)
-            if member.get("available")
+            if member.get("available") is True
             and all(member.get("fields", {}).get(field) is not None for field in HARD)
         ),
         key=lambda member: member["member_id"],
@@ -147,6 +177,29 @@ def _greedy_pairs(edges):
     selected = []
     used = set()
     for pair, _ in sorted(edges.items(), key=lambda item: (-item[1], item[0])):
+        if not used.intersection(pair):
+            selected.append(pair)
+            used.update(pair)
+    return selected
+
+
+def _greedy_pairs_wait_tie(edges, state):
+    """Research-only: prefer longer-waiting endpoints when scores tie."""
+    arrivals = {
+        member["member_id"]: member.get("arrived_day", state.get("day", 0))
+        for member in _unique_consistent_members(state)
+    }
+    selected = []
+    used = set()
+    for pair, _ in sorted(
+        edges.items(),
+        key=lambda item: (
+            -item[1],
+            max(arrivals.get(member_id, state.get("day", 0)) for member_id in item[0]),
+            sum(arrivals.get(member_id, state.get("day", 0)) for member_id in item[0]),
+            item[0],
+        ),
+    ):
         if not used.intersection(pair):
             selected.append(pair)
             used.update(pair)
@@ -327,6 +380,9 @@ def select_pairs(state, mode="adaptive"):
     if mode in ("adaptive_greedy", "adaptive_input_order_greedy"):
         edges = compatibility
         pairs = _greedy_pairs(compatibility)
+    elif mode == "adaptive_wait_tie_greedy":
+        edges = compatibility
+        pairs = _greedy_pairs_wait_tie(compatibility, state)
     elif mode == "adaptive_history_greedy":
         # Research-only allocator ablation. It keeps the selected policy's
         # history score and changes only the allocation step.
@@ -352,7 +408,10 @@ def _graph_aware_asks(state):
     clarification can make the edge decidable. Equal scores preserve the
     observable state order, making this an isolated ordering ablation.
     """
-    members = [member for member in _unique_consistent_members(state) if member.get("available")]
+    members = [
+        member for member in state.get("members", [])
+        if member.get("available")
+    ]
     candidates = [
         (position, member)
         for position, member in enumerate(members)
@@ -391,7 +450,7 @@ def _stable_constraint_asks(state):
         statuses = member.get("field_status", {})
         if (
             not isinstance(member_id, str)
-            or not member.get("available")
+            or member.get("available") is not True
             or not any(fields.get(field) is None for field in HARD)
             or any(statuses.get(field) == "declined" for field in HARD)
         ):
@@ -413,7 +472,7 @@ def _stable_constraint_asks(state):
 def plan_asks(state, mode="adaptive"):
     if mode == "adaptive_graph_asks":
         return _graph_aware_asks(state)
-    if mode == "adaptive_greedy":
+    if mode in ("adaptive_greedy", "adaptive_wait_tie_greedy"):
         return _stable_constraint_asks(state)
     return baseline_asks(state)
 

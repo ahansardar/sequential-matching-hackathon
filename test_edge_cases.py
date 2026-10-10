@@ -12,7 +12,11 @@ import unittest
 
 from adaptive import decide, plan_asks
 from evaluate import invoke
-from experiments.outcome_events import classify_funnel, recorded_yes_by_deadline
+from experiments.outcome_events import (
+    classify_funnel,
+    recorded_yes_by_deadline,
+    validate_event_sequence,
+)
 from kit import HARD, SOFT, eligibility
 
 
@@ -72,6 +76,7 @@ class EdgeCaseTests(unittest.TestCase):
         for index, member in enumerate(members[:6]):
             member["fields"][HARD[index]] = None
             member["field_status"][HARD[index]] = "not_asked"
+            member["field_observed_day"][HARD[index]] = None
         forward = state(members)
         reversed_state = state(list(reversed(copy.deepcopy(members))))
         self.assertEqual(plan_asks(forward, "adaptive_greedy"), plan_asks(reversed_state, "adaptive_greedy"))
@@ -89,10 +94,13 @@ class EdgeCaseTests(unittest.TestCase):
             member = complete_member(f"m{index:03d}", arrived_day=index % 2)
             member["fields"]["age_min"] = None
             member["field_status"]["age_min"] = "not_asked"
+            member["field_observed_day"]["age_min"] = None
             members.append(member)
         members.append(copy.deepcopy(members[0]))
         for budget, expected in ((0, 0), (1, 0), (2, 0), (3, 1), (11, 3), (12, 4)):
-            asks = plan_asks(state(copy.deepcopy(members), budget), "adaptive_greedy")
+            current = state(copy.deepcopy(members), budget)
+            current["day"] = 1
+            asks = plan_asks(current, "adaptive_greedy")
             self.assertEqual(len(asks), expected)
             self.assertEqual(len({row["member_id"] for row in asks}), len(asks))
 
@@ -110,7 +118,26 @@ class EdgeCaseTests(unittest.TestCase):
                 if row["member_id"] == "duplicate":
                     row["fields"]["age_min"] = None
                     row["field_status"]["age_min"] = "not_asked"
+                    row["field_observed_day"]["age_min"] = None
             self.assertNotIn("duplicate", {ask["member_id"] for ask in plan_asks(current, "adaptive_greedy")})
+
+    def test_inconsistent_field_status_or_future_observation_fails_closed(self):
+        peer = complete_member("peer")
+        cases = []
+        observed_null = complete_member("bad")
+        observed_null["fields"]["relationship_goal"] = None
+        cases.append(observed_null)
+        declined_value = complete_member("bad")
+        declined_value["field_status"]["age_min"] = "declined"
+        cases.append(declined_value)
+        future_observation = complete_member("bad")
+        future_observation["field_observed_day"]["age_min"] = 1
+        cases.append(future_observation)
+        for malformed in cases:
+            current = state([malformed, copy.deepcopy(peer)])
+            response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+            self.assertEqual(response["pairs"], [])
+            self.assertEqual(plan_asks(current, "adaptive_greedy"), [])
 
     def test_non_mapping_memory_is_safely_reinitialized(self):
         empty = state([])
@@ -145,6 +172,22 @@ class EdgeCaseTests(unittest.TestCase):
         response, _ = invoke([sys.executable, "policy.py"], request, timeout=10)
         self.assertEqual(response["pairs"], [["a", "b"]])
 
+    def test_near_limit_constraint_arrays_stay_inside_runtime_limit(self):
+        left = complete_member("a")
+        right = complete_member("b")
+        large = [f"zone_{index:05d}" for index in range(22_000)] + ["zone_a"]
+        left["fields"]["acceptable_zones"] = large
+        right["fields"]["acceptable_zones"] = list(reversed(large))
+        request = {
+            "schema_version": "1.0.0", "phase": "match",
+            "state": state([left, right]), "memory": None,
+        }
+        self.assertLess(len(json.dumps(request).encode()), 1024 * 1024)
+        started = time.perf_counter()
+        response, _ = invoke([sys.executable, "policy.py"], request, timeout=10)
+        self.assertEqual(response["pairs"], [["a", "b"]])
+        self.assertLess(time.perf_counter() - started, 10)
+
     def test_mixed_pools_and_reversed_prior_pair_are_never_crossed(self):
         members = [complete_member("a"), complete_member("b"), complete_member("c")]
         members[2]["pool_id"] = "other"
@@ -152,6 +195,54 @@ class EdgeCaseTests(unittest.TestCase):
         current["introductions"] = [{"user_a": "b", "user_b": "a"}]
         response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
         self.assertEqual(response["pairs"], [])
+
+    def test_imbalanced_pools_and_single_feasible_edge(self):
+        left = complete_member("large_a")
+        right = complete_member("large_b")
+        isolated = [complete_member(f"single_{index}") for index in range(12)]
+        for index, member in enumerate(isolated):
+            member["pool_id"] = f"singleton_{index}"
+        current = state([left, right, *isolated])
+        response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+        self.assertEqual(response["pairs"], [["large_a", "large_b"]])
+
+    def test_odd_population_sizes_leave_exactly_one_member_unmatched(self):
+        for size in (1, 3, 199, 201):
+            current = state([complete_member(f"m{index:03d}") for index in range(size)])
+            response = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+            self.assertEqual(len(response["pairs"]), size // 2)
+            flattened = [member_id for pair in response["pairs"] for member_id in pair]
+            self.assertEqual(len(flattened), len(set(flattened)))
+
+    def test_wait_tie_challenger_changes_only_equal_score_priority(self):
+        current = state([
+            complete_member("z_old", arrived_day=0),
+            complete_member("a_new", arrived_day=10),
+            complete_member("b_new", arrived_day=10),
+        ])
+        current["day"] = 10
+        incumbent = decide({"phase": "match", "state": current, "memory": None}, "adaptive_greedy")
+        challenger = decide(
+            {"phase": "match", "state": current, "memory": None},
+            "adaptive_wait_tie_greedy",
+        )
+        self.assertEqual(incumbent["pairs"], [["a_new", "b_new"]])
+        self.assertIn("z_old", challenger["pairs"][0])
+        self.assertEqual(len(incumbent["pairs"]), len(challenger["pairs"]))
+
+    def test_refreshed_match_state_can_remove_an_ask_phase_member(self):
+        incomplete = complete_member("a")
+        incomplete["fields"]["age_min"] = None
+        incomplete["field_status"]["age_min"] = "not_asked"
+        incomplete["field_observed_day"]["age_min"] = None
+        ask_state = state([incomplete, complete_member("b")])
+        asks = decide({"phase": "ask", "state": ask_state, "memory": None}, "adaptive_greedy")
+        self.assertEqual(asks["asks"], [{"member_id": "a", "field": "constraints"}])
+
+        refreshed = state([complete_member("a"), complete_member("b")])
+        refreshed["members"][0]["available"] = False
+        match = decide({"phase": "match", "state": refreshed, "memory": asks["memory"]}, "adaptive_greedy")
+        self.assertEqual(match["pairs"], [])
 
     def test_randomized_states_preserve_matching_invariants(self):
         generator = random.Random(20261010)
@@ -165,6 +256,7 @@ class EdgeCaseTests(unittest.TestCase):
                     field = generator.choice(HARD)
                     member["fields"][field] = None
                     member["field_status"][field] = "not_asked"
+                    member["field_observed_day"][field] = None
                 if generator.random() < 0.25:
                     member["fields"]["relationship_goal"] = generator.choice([None, "long_term", "exploring"])
                 members.append(member)
@@ -260,7 +352,8 @@ class EdgeCaseTests(unittest.TestCase):
             "event": "introduction_response", "member_id": "a", "value": "yes",
             "occurred_day": 9, "observed_day": 9,
         }]
-        self.assertFalse(recorded_yes_by_deadline(intro, before_assignment, "a"))
+        with self.assertRaises(ValueError):
+            recorded_yes_by_deadline(intro, before_assignment, "a")
         duplicate = before_assignment + [dict(before_assignment[0])]
         with self.assertRaises(ValueError):
             recorded_yes_by_deadline(intro, duplicate, "a")
@@ -281,20 +374,44 @@ class EdgeCaseTests(unittest.TestCase):
             "event": "introduction_response", "member_id": "a", "value": "yes",
             "occurred_day": True, "observed_day": True,
         }]
-        self.assertFalse(recorded_yes_by_deadline(intro, boolean_day, "a"))
+        with self.assertRaises(ValueError):
+            recorded_yes_by_deadline(intro, boolean_day, "a")
 
         impossible = [
             {"event": "introduction_response", "member_id": "a", "value": "yes", "occurred_day": 13, "observed_day": 13},
             {"event": "introduction_response", "member_id": "b", "value": "yes", "occurred_day": 14, "observed_day": 14},
             {"event": "date_happened", "member_id": None, "value": True, "occurred_day": 12, "observed_day": 12},
         ]
-        self.assertEqual(classify_funnel(intro, impossible), {
-            "mutual_acceptance": True, "date_happened": False, "msmi": False,
-        })
+        with self.assertRaises(ValueError):
+            classify_funnel(intro, impossible)
 
         wrong_date_actor = [dict(impossible[-1], member_id="a")]
         with self.assertRaises(ValueError):
             classify_funnel(intro, wrong_date_actor)
+
+    def test_event_stage_deadline_and_introduction_identity_are_strict(self):
+        intro = {
+            "introduction_id": "i", "user_a": "a", "user_b": "b",
+            "assigned_day": 10, "response_deadline_day": 17,
+        }
+        with self.assertRaises(ValueError):
+            validate_event_sequence(dict(intro, response_deadline_day=18), [])
+
+        wrong_intro = [{
+            "introduction_id": "other", "event": "introduction_response",
+            "member_id": "a", "value": "yes", "occurred_day": 11,
+            "observed_day": 11,
+        }]
+        with self.assertRaises(ValueError):
+            validate_event_sequence(intro, wrong_intro)
+
+        second_without_date = [
+            {"event": "introduction_response", "member_id": "a", "value": "yes", "occurred_day": 11, "observed_day": 11},
+            {"event": "introduction_response", "member_id": "b", "value": "yes", "occurred_day": 12, "observed_day": 12},
+            {"event": "second_meeting_intention", "member_id": "a", "value": "yes", "occurred_day": 14, "observed_day": 14},
+        ]
+        with self.assertRaises(ValueError):
+            validate_event_sequence(intro, second_without_date)
 
 
 if __name__ == "__main__":

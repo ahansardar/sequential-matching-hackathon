@@ -5,10 +5,13 @@ import unittest
 
 from experiments.directional_calibration import (
     calibration_metrics,
+    ece_bin_sensitivity,
     equal_variant_metrics,
     paired_brier_difference_intervals,
     run_audit,
     seed_cluster_intervals,
+    subgroup_seed_cluster_intervals,
+    intersectional_calibration_cells,
 )
 
 
@@ -83,6 +86,34 @@ class DirectionalCalibrationTests(unittest.TestCase):
         result = paired_brier_difference_intervals(challenger, reference, 20, 7)
         self.assertEqual(result["seed_groups"], 2)
         self.assertEqual(result["variants_per_seed"], 2)
+
+    def test_sparse_subgroup_intervals_keep_empty_seed_worlds(self):
+        rows = [
+            {"seed": 1, "variant": "development", "label": 1, "prediction": 0.6},
+            {"seed": 3, "variant": "sparse", "label": 0, "prediction": 0.4},
+        ]
+        result = subgroup_seed_cluster_intervals(rows, [1, 2, 3], 50, 7)
+        self.assertEqual(result["seed_groups"], 3)
+        self.assertEqual(result["seed_groups_with_examples"], 2)
+        self.assertEqual(result["examples"], 2)
+        self.assertIn("brier_score", result["intervals"])
+
+    def test_ece_sensitivity_and_small_intersectional_cells_are_explicit(self):
+        rows = [
+            {
+                "label": index % 2,
+                "prediction": 0.2 + 0.01 * index,
+                "soft_observed_count": 0,
+                "candidate_opportunity_count": 0,
+                "assigned_day": 5,
+            }
+            for index in range(20)
+        ]
+        sensitivity = ece_bin_sensitivity(rows, (5, 10))
+        self.assertEqual(set(sensitivity), {"5", "10"})
+        cells = intersectional_calibration_cells(rows, minimum_examples=25)
+        self.assertEqual(cells[0]["status"], "suppressed_small_sample")
+        self.assertEqual(cells[0]["examples"], 20)
 
 
 if __name__ == "__main__":

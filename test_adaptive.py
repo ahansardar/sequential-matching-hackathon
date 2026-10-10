@@ -242,7 +242,10 @@ class AdaptivePolicyTests(unittest.TestCase):
                 "gender": gender,
                 "zone": "central",
                 "available": True,
+                "arrived_day": 0,
                 "fields": dict(fields),
+                "field_status": {field: "observed" for field in HARD + SOFT},
+                "field_observed_day": {field: 0 for field in HARD + SOFT},
             }
 
         state = {

@@ -15,6 +15,7 @@ from kit import Simulator, generate, VERSION
 
 VARIANTS = ('development', 'sparse', 'cold_start', 'delayed', 'shift', 'drift')
 METHODS = ('adaptive', 'adaptive_greedy', 'adaptive_input_order_greedy',
+           'adaptive_wait_tie_greedy',
            'adaptive_always_max', 'adaptive_legacy',
            'greedy', 'no_asks', 'random')
 LIMIT = 1024 * 1024
@@ -84,6 +85,7 @@ def episode(world, command, timeout=10, simulator_class=Simulator):
     sim = simulator_class(world)
     memory = None
     inference_seconds = 0
+    call_seconds = []
     digest = hashlib.sha256()
     for _ in range(60):
         for phase in ('ask', 'match'):
@@ -91,6 +93,7 @@ def episode(world, command, timeout=10, simulator_class=Simulator):
                        'state': sim.observe(), 'memory': memory}
             response, elapsed = invoke(command, request, timeout)
             inference_seconds += elapsed
+            call_seconds.append(elapsed)
             memory = response['memory']
             action = response['asks' if phase == 'ask' else 'pairs']
             digest.update(json.dumps([phase, sim.day, action], sort_keys=True).encode())
@@ -114,7 +117,14 @@ def episode(world, command, timeout=10, simulator_class=Simulator):
                   coverage=len(first) / max(1, len(arrived)),
                   mutual_acceptances_per_100=100 * result['mutual_acceptances'] / max(1, len(arrived)),
                   first_introduction_wait_days=waits,
-                  inference_seconds=inference_seconds, action_sha256=digest.hexdigest())
+                  inference_seconds=inference_seconds,
+                  policy_calls=len(call_seconds),
+                  maximum_policy_call_seconds=max(call_seconds, default=0.0),
+                  p95_policy_call_seconds=(
+                      statistics.quantiles(call_seconds, n=20, method="inclusive")[18]
+                      if len(call_seconds) >= 2 else max(call_seconds, default=0.0)
+                  ),
+                  action_sha256=digest.hexdigest())
     return result
 
 

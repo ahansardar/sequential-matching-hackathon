@@ -157,6 +157,7 @@ def build(output):
         "meta": {
             "title": "Sequential Matching Data Viewer",
             "release": "1.0.0",
+            "policyMode": "adaptive_greedy",
             "generatedFrom": "observable public snapshots and trusted local experiment outputs",
             "synthetic": True,
             "warning": "Synthetic simulator evidence only. Not real people or product performance.",

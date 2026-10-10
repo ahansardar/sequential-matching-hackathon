@@ -14,6 +14,11 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from experiments.seed_registry import validate_registry  # noqa: E402
+
 RESULTS = ROOT / "results"
 EXPECTED_VARIANTS = {
     "development", "sparse", "cold_start", "delayed", "shift", "drift",
@@ -132,6 +137,18 @@ def _validate_profile(filename, expected_rate):
     for metric, analysis in payload["paired_masked_minus_unmasked"].items():
         _validate_analysis(analysis, before, after, seeds, variants, metric)
     for condition in ("unmasked", "masked"):
+        condition_payload = payload["conditions"][condition]
+        intervals = condition_payload.get("group_seed_cluster_intervals", {})
+        if set(intervals) != {"0", "1-2", "3-6", "7"}:
+            raise AssertionError(f"profile subgroup intervals missing in {condition}")
+        required = {
+            "coverage", "unserved_rate", "msmi_member_rate",
+            "introductions_per_100_available_member_days",
+            "share_available_days_with_observable_opportunity",
+            "mean_decision_window_days_without_first_introduction",
+        }
+        if any(not required <= set(group["intervals"]) for group in intervals.values()):
+            raise AssertionError(f"profile subgroup interval metrics missing in {condition}")
         total = sum(group["members"] for group in payload["conditions"][condition]["groups"].values())
         episode_total = sum(row["arrived_members"] for row in payload["conditions"][condition]["episodes"])
         if total != episode_total:
@@ -168,6 +185,8 @@ def _validate_calibration():
         raise AssertionError("directional predictions do not match the holdout count")
     if any(not 0 <= row["prediction"] <= 1 for row in predictions):
         raise AssertionError("directional probability is outside zero through one")
+    if any("assigned_day" not in row for row in predictions):
+        raise AssertionError("directional predictions lack assignment day")
     _assert_close(
         overall["observed_rate"],
         statistics.mean(row["label"] for row in predictions),
@@ -212,7 +231,37 @@ def _validate_calibration():
         raise AssertionError("directional calibration lacks completeness groups")
     if not payload["holdout"].get("by_candidate_opportunity"):
         raise AssertionError("directional calibration lacks opportunity groups")
+    for key in (
+        "by_profile_completeness_seed_cluster_intervals",
+        "by_candidate_opportunity_seed_cluster_intervals",
+        "by_assignment_day_seed_cluster_intervals",
+    ):
+        if not payload["holdout"].get(key):
+            raise AssertionError(f"directional calibration lacks {key}")
+    if set(payload["holdout"].get("ece_equal_count_bin_sensitivity", {})) != {"5", "10", "20"}:
+        raise AssertionError("directional calibration lacks 5/10/20-bin sensitivity")
+    cells = payload["holdout"].get("intersectional_cells", [])
+    if not cells or any(cell.get("status") not in {"reported", "suppressed_small_sample"} for cell in cells):
+        raise AssertionError("directional intersectional cells are missing or invalid")
     return train | calibrate | holdout
+
+
+def _validate_sensitivity():
+    payload = _load("corrected_sensitivity.json")
+    expected = {
+        "history", "guarded_allocation", "clarification_order",
+        "safe_cardinality_no_history", "stable_member_order",
+        "equal_score_wait_tie",
+    }
+    if set(payload.get("studies", {})) != expected:
+        raise AssertionError("sensitivity audit does not cover every corrected comparison")
+    for study in payload["studies"].values():
+        if study["variants_per_seed"] != len(EXPECTED_VARIANTS):
+            raise AssertionError("sensitivity audit lacks a complete variant block")
+        for metric in study["metrics"].values():
+            if not 0 <= metric["exact_two_sided_sign_flip_p_value"] <= 1:
+                raise AssertionError("invalid exact sign-flip p-value")
+    return expected
 
 
 def _validate_edge_cases():
@@ -238,6 +287,7 @@ def main():
         "profile_all_mask": _validate_profile("corrected_profile_completeness_all_masked.json", 1.0),
         "directional_calibration": _validate_calibration(),
         "member_order": _validate_component("corrected_member_order.json"),
+        "equal_score_wait_tie": _validate_component("corrected_wait_tie.json"),
         "edge_cases": _validate_edge_cases(),
     }
     # The profile studies intentionally reuse the same worlds, including their
@@ -251,9 +301,12 @@ def main():
                 raise AssertionError(
                     f"study seed overlap between {left_name} and {right_name}: {sorted(overlap)}"
                 )
+    _validate_sensitivity()
+    seed_registry = validate_registry()
     print(json.dumps({
         "status": "passed",
-        "files": 9,
+        "files": 11,
+        "seed_registry": seed_registry,
         "checks": [
             "finite JSON numbers",
             "complete seed-by-variant blocks",
@@ -266,6 +319,11 @@ def main():
             "submitted policy mode used by calibration and service audits",
             "equal-variant calibration and paired Brier intervals",
             "opportunity-adjusted service cells",
+            "seed-clustered subgroup service and calibration intervals",
+            "assignment-time and intersectional calibration diagnostics",
+            "ECE bin sensitivity and small-cell suppression",
+            "sign-flip, leave-one-seed-out and detectable-effect sensitivity",
+            "permanent non-overlapping seed registry",
             "order-invariant policy actions and dense-graph boundary",
         ],
     }, indent=2))

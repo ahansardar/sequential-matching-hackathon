@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "rule": "A generated seed may appear in more than one entry only when every entry has the same non-null reuse_group.",
+  "entries": [
+    {"name": "public_smoke_and_baselines", "role": "public_smoke", "ranges": [[101, 103]], "reuse_group": "public_101_103"},
+    {"name": "early_safe_cardinality_confirmation", "role": "historical_holdout", "ranges": [[1101, 1110]], "reuse_group": null},
+    {"name": "outcome_model_training_and_pair_scorer_features", "role": "training", "ranges": [[2001, 2040]], "reuse_group": "outcome_model_2001_2040"},
+    {"name": "gated_history_screen", "role": "screening", "ranges": [[3901, 3910]], "reuse_group": null},
+    {"name": "history_confirmation_and_corrected_reanalysis", "role": "holdout_reused_only_for_reanalysis", "ranges": [[4001, 4020]], "reuse_group": "history_4001_4020"},
+    {"name": "pair_scorer_screen", "role": "screening", "ranges": [[4101, 4105]], "reuse_group": null},
+    {"name": "pair_scorer_confirmation", "role": "confirmation", "ranges": [[4201, 4210]], "reuse_group": null},
+    {"name": "pair_scorer_final_holdout", "role": "final_holdout", "ranges": [[4301, 4320]], "reuse_group": null},
+    {"name": "objective_separation", "role": "holdout", "ranges": [[5201, 5210]], "reuse_group": null},
+    {"name": "allocation_telemetry", "role": "audit", "ranges": [[5301, 5303]], "reuse_group": null},
+    {"name": "directional_model_fit_reserved", "role": "training", "ranges": [[6001, 6020]], "reuse_group": null},
+    {"name": "directional_calibration_reserved", "role": "calibration", "ranges": [[6031, 6040]], "reuse_group": null},
+    {"name": "directional_final_holdout_reserved", "role": "final_holdout", "ranges": [[6101, 6120]], "reuse_group": null},
+    {"name": "profile_service_and_masking_reserved", "role": "paired_service_audit", "ranges": [[6201, 6220]], "reuse_group": "profile_6201_6220"},
+    {"name": "guarded_allocation_outcomes", "role": "component_holdout", "ranges": [[6301, 6310]], "reuse_group": null},
+    {"name": "clarification_order", "role": "component_holdout", "ranges": [[6401, 6410]], "reuse_group": null},
+    {"name": "safe_cardinality_without_history", "role": "component_holdout", "ranges": [[6501, 6510]], "reuse_group": null},
+    {"name": "stable_member_order", "role": "correctness_holdout", "ranges": [[7201, 7220]], "reuse_group": null},
+    {"name": "edge_case_permutations", "role": "adversarial_audit", "ranges": [[7301, 7302]], "reuse_group": null},
+    {"name": "equal_score_wait_tie", "role": "service_tradeoff_holdout", "ranges": [[7401, 7410]], "reuse_group": null}
+  ]
+}

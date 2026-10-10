@@ -6,6 +6,7 @@ import unittest
 from experiments.profile_completeness_audit import (
     arrival_band,
     completeness_band,
+    group_seed_cluster_intervals,
     mask_soft_information,
     opportunity_band,
 )
@@ -59,6 +60,28 @@ class ProfileCompletenessAuditTests(unittest.TestCase):
                 for field in SOFT
             ),
         )
+
+    def test_group_intervals_resample_complete_seed_worlds(self):
+        rows = []
+        for seed in (1, 2):
+            for variant in ("development", "sparse"):
+                groups = {}
+                for band in ("0", "1-2", "3-6", "7"):
+                    groups[band] = {
+                        "members": 10,
+                        "served_members": seed,
+                        "unserved_members": 10 - seed,
+                        "msmi_members": seed - 1,
+                        "available_member_days": 50,
+                        "observable_opportunity_member_days": 25,
+                        "assignments": seed,
+                        "decision_window_wait_sum": 80 - seed,
+                    }
+                rows.append({"seed": seed, "variant": variant, "groups": groups})
+        result = group_seed_cluster_intervals(rows, 50, 7)
+        self.assertEqual(result["0"]["seed_groups"], 2)
+        self.assertEqual(result["0"]["variants_per_seed"], 2)
+        self.assertIn("coverage", result["0"]["intervals"])
 
 
 if __name__ == "__main__":

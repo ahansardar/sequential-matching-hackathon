@@ -11,8 +11,10 @@ import argparse
 import concurrent.futures
 import copy
 import hashlib
+import itertools
 import json
 from pathlib import Path
+import random
 import statistics
 import sys
 
@@ -131,8 +133,15 @@ def profile_episode(seed, variant, mask_rate):
     memory = None
     initial_counts = {}
     initial_opportunities = {}
+    available_days = {}
+    observable_opportunity_days = {}
     for _ in range(60):
         raw_ask_state = simulator.observe()
+        available_members = [member for member in raw_ask_state["members"] if member.get("available")]
+        has_observable_opportunity = set()
+        for left, right in itertools.combinations(available_members, 2):
+            if eligibility(left, right)["status"] != "infeasible":
+                has_observable_opportunity.update((left["member_id"], right["member_id"]))
         for member in raw_ask_state["members"]:
             if member["member_id"] not in initial_counts:
                 initial_counts[member["member_id"]] = sum(
@@ -141,6 +150,12 @@ def profile_episode(seed, variant, mask_rate):
                 initial_opportunities[member["member_id"]] = _initial_opportunity(
                     member, raw_ask_state["members"]
                 )
+            if member.get("available"):
+                available_days[member["member_id"]] = available_days.get(member["member_id"], 0) + 1
+                if member["member_id"] in has_observable_opportunity:
+                    observable_opportunity_days[member["member_id"]] = (
+                        observable_opportunity_days.get(member["member_id"], 0) + 1
+                    )
         ask_state = mask_soft_information(raw_ask_state, seed, mask_rate)
         ask = decide({"phase": "ask", "state": ask_state, "memory": memory}, "adaptive_greedy")
         simulator.resolve_asks(ask["asks"])
@@ -178,6 +193,15 @@ def profile_episode(seed, variant, mask_rate):
             - arrived[member_id]
             for member_id in served
         ]
+        decision_window_waits = [
+            (
+                min(item["assigned_day"] for item in introductions_by_member[member_id])
+                - arrived[member_id]
+                if introductions_by_member[member_id]
+                else 60 - arrived[member_id]
+            )
+            for member_id in member_ids
+        ]
         mutual_members = {
             member_id for member_id in member_ids
             if any(item["introduction_id"] in mutual_ids for item in introductions_by_member[member_id])
@@ -191,6 +215,12 @@ def profile_episode(seed, variant, mask_rate):
             if any(item["introduction_id"] in msmi_ids for item in introductions_by_member[member_id])
         }
         size = len(member_ids)
+        assignment_counts = [len(introductions_by_member[member_id]) for member_id in member_ids]
+        assignments = sum(assignment_counts)
+        available_member_days = sum(available_days.get(member_id, 0) for member_id in member_ids)
+        opportunity_member_days = sum(
+            observable_opportunity_days.get(member_id, 0) for member_id in member_ids
+        )
         potential_ids = [
             member_id for member_id in member_ids
             if initial_opportunities[member_id]["not_ruled_out"] > 0
@@ -208,13 +238,27 @@ def profile_episode(seed, variant, mask_rate):
             "date_member_rate": len(date_members) / max(1, size),
             "msmi_members": len(msmi_members),
             "msmi_member_rate": len(msmi_members) / max(1, size),
-            "assignments": sum(len(introductions_by_member[member_id]) for member_id in member_ids),
-            "mean_assignments_per_member": sum(
-                len(introductions_by_member[member_id]) for member_id in member_ids
-            ) / max(1, size),
+            "assignments": assignments,
+            "mean_assignments_per_member": assignments / max(1, size),
+            "members_with_zero_introductions": sum(count == 0 for count in assignment_counts),
+            "members_with_one_introduction": sum(count == 1 for count in assignment_counts),
+            "members_with_two_or_more_introductions": sum(count >= 2 for count in assignment_counts),
+            "maximum_introductions_for_one_member": max(assignment_counts, default=0),
+            "available_member_days": available_member_days,
+            "introductions_per_100_available_member_days": (
+                100 * assignments / available_member_days if available_member_days else None
+            ),
+            "observable_opportunity_member_days": opportunity_member_days,
+            "share_available_days_with_observable_opportunity": (
+                opportunity_member_days / available_member_days if available_member_days else None
+            ),
             "median_wait_days_served": statistics.median(waits) if waits else None,
             "p90_wait_days_served": _percentile(waits, 0.90),
             "wait_days_served": waits,
+            "decision_window_wait_sum": sum(decision_window_waits),
+            "mean_decision_window_days_without_first_introduction": (
+                statistics.mean(decision_window_waits) if decision_window_waits else None
+            ),
             "members_with_potential_partner": len(potential_ids),
             "served_members_with_potential_partner": served_with_potential,
             "coverage_given_potential_partner": (
@@ -304,6 +348,9 @@ def aggregate_groups(rows):
         potential = sum(group["members_with_potential_partner"] for group in groups)
         potential_served = sum(group["served_members_with_potential_partner"] for group in groups)
         waits = [value for group in groups for value in group["wait_days_served"]]
+        available_member_days = sum(group["available_member_days"] for group in groups)
+        opportunity_member_days = sum(group["observable_opportunity_member_days"] for group in groups)
+        assignments = sum(group["assignments"] for group in groups)
         output[band] = {
             "members": members,
             "served_members": served,
@@ -315,9 +362,32 @@ def aggregate_groups(rows):
             ) / max(1, members),
             "date_member_rate": sum(group["date_members"] for group in groups) / max(1, members),
             "msmi_member_rate": sum(group["msmi_members"] for group in groups) / max(1, members),
-            "mean_assignments_per_member": sum(group["assignments"] for group in groups) / max(1, members),
+            "mean_assignments_per_member": assignments / max(1, members),
+            "members_with_zero_introductions": sum(
+                group["members_with_zero_introductions"] for group in groups
+            ),
+            "members_with_one_introduction": sum(
+                group["members_with_one_introduction"] for group in groups
+            ),
+            "members_with_two_or_more_introductions": sum(
+                group["members_with_two_or_more_introductions"] for group in groups
+            ),
+            "maximum_introductions_for_one_member": max(
+                (group["maximum_introductions_for_one_member"] for group in groups), default=0
+            ),
+            "available_member_days": available_member_days,
+            "introductions_per_100_available_member_days": (
+                100 * assignments / available_member_days if available_member_days else None
+            ),
+            "observable_opportunity_member_days": opportunity_member_days,
+            "share_available_days_with_observable_opportunity": (
+                opportunity_member_days / available_member_days if available_member_days else None
+            ),
             "median_wait_days_served": statistics.median(waits) if waits else None,
             "p90_wait_days_served": _percentile(waits, 0.90),
+            "mean_decision_window_days_without_first_introduction": sum(
+                group["decision_window_wait_sum"] for group in groups
+            ) / max(1, members),
             "members_with_potential_partner": potential,
             "coverage_given_potential_partner": (
                 potential_served / potential if potential else None
@@ -330,6 +400,65 @@ def aggregate_groups(rows):
                 (group["mean_initial_decidable_feasible_partners"] or 0) * group["members"]
                 for group in groups
             ) / max(1, members),
+        }
+    return output
+
+
+def group_seed_cluster_intervals(rows, resamples, bootstrap_seed):
+    """Member-pooled subgroup intervals while resampling complete seed worlds."""
+    seeds = sorted({row["seed"] for row in rows})
+    variants = sorted({row["variant"] for row in rows})
+    if not seeds or not variants or resamples < 1:
+        raise ValueError("group intervals require seeds, variants and resamples")
+    by_seed = {
+        seed: [row for row in rows if row["seed"] == seed]
+        for seed in seeds
+    }
+    for seed, selected in by_seed.items():
+        if {row["variant"] for row in selected} != set(variants):
+            raise ValueError(f"seed {seed} does not contain every variant")
+
+    def metrics(selected_rows, band):
+        groups = [row["groups"][band] for row in selected_rows]
+        members = sum(group["members"] for group in groups)
+        available = sum(group["available_member_days"] for group in groups)
+        return {
+            "coverage": sum(group["served_members"] for group in groups) / max(1, members),
+            "unserved_rate": sum(group["unserved_members"] for group in groups) / max(1, members),
+            "msmi_member_rate": sum(group["msmi_members"] for group in groups) / max(1, members),
+            "introductions_per_100_available_member_days": (
+                100 * sum(group["assignments"] for group in groups) / max(1, available)
+            ),
+            "share_available_days_with_observable_opportunity": sum(
+                group["observable_opportunity_member_days"] for group in groups
+            ) / max(1, available),
+            "mean_decision_window_days_without_first_introduction": sum(
+                group["decision_window_wait_sum"] for group in groups
+            ) / max(1, members),
+        }
+
+    generator = random.Random(bootstrap_seed)
+    output = {}
+    for band in BAND_ORDER:
+        samples = {name: [] for name in metrics(rows, band)}
+        for _ in range(resamples):
+            selected_rows = [
+                row
+                for _ in seeds
+                for row in by_seed[generator.choice(seeds)]
+            ]
+            measured = metrics(selected_rows, band)
+            for name, value in measured.items():
+                samples[name].append(value)
+        output[band] = {
+            "method": "percentile bootstrap clustered by seed; subgroup members pooled across variants",
+            "seed_groups": len(seeds),
+            "variants_per_seed": len(variants),
+            "resamples": resamples,
+            "intervals": {
+                name: {"lower": _percentile(values, 0.025), "upper": _percentile(values, 0.975)}
+                for name, values in samples.items()
+            },
         }
     return output
 
@@ -408,6 +537,9 @@ def run_audit(
             name: {
                 "summary": summarise(condition_rows),
                 "groups": aggregate_groups(condition_rows),
+                "group_seed_cluster_intervals": group_seed_cluster_intervals(
+                    condition_rows, resamples, bootstrap_seed + (0 if name == "unmasked" else 100),
+                ),
                 "opportunity_adjusted_service_cells": aggregate_service_cells(condition_rows),
                 "episodes": condition_rows,
             }
