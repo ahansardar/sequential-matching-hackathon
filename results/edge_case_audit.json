@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "policy_mode": "adaptive_greedy",
+  "scope": "observable public-state behavior only",
+  "seed_worlds": [
+    7301,
+    7302
+  ],
+  "days_per_world": 10,
+  "states_checked": 40,
+  "order_only_permutations_checked": 120,
+  "valid_pairs_checked": 48,
+  "memory_shapes_checked": 6,
+  "empty_graph_pairs": 0,
+  "dense_graph_members": 200,
+  "dense_graph_pairs": 100,
+  "dense_graph_direct_seconds": 0.10806950000551296,
+  "limits": [
+    "This is a deterministic adversarial audit, not evidence about private score.",
+    "Container wall-clock and protocol isolation are checked separately by the release commands.",
+    "Malformed organiser requests outside the published data contract are not accepted as valid inputs."
+  ]
+}
