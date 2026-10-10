@@ -14,10 +14,11 @@ and addressed each point in your feedback:
 - the two directional targets are now explicitly defined as recorded Yes by
   the response deadline, with separate fit, calibration and untouched holdout
   seed blocks, equal scenario weighting and paired seed-grouped Brier
-  comparisons;
+  comparisons, plus time-band, intersectional and ECE-bin sensitivity checks;
 - profile-completeness results now include coverage, unserved rate, waiting
-  time and completed outcomes, plus arrival-by-opportunity service cells and
-  paired 50% and 100% masking tests;
+  time, repeated service and completed outcomes, with whole-seed subgroup
+  intervals, daily availability and opportunity exposure, and paired 50% and
+  100% masking tests;
 - guarded cardinality is evaluated on completed outcomes in isolated
   comparisons;
 - state-order clarification is compared with graph-aware and stable-order
@@ -25,21 +26,24 @@ and addressed each point in your feedback:
   records are reordered; and
 - a rerunnable edge-case audit covers order permutations, exact outcome
   boundaries, stale memory, empty and dense graphs, deterministic hashing and
-  protocol limits.
+  protocol limits; and
+- a fixed 33-item closure register and release audit cover contradictory data,
+  event sequencing, split reuse, small-world sensitivity, PDF/source parity
+  and remote-link availability.
 
 The addendum, code, independent result validator and raw JSON outputs are in
 the repository links below:
 
 - Fixed evidence commit:
-  https://github.com/ahansardar/sequential-matching-hackathon/commit/d068901f75490e85aa86f7ae795f848d14cb43f4
+  https://github.com/ahansardar/sequential-matching-hackathon/commit/1be722f78e945ae5fbb05da34ffa487321dc44a5
 - Corrected Markdown addendum:
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/ROUND1_CORRECTED_ADDENDUM.md
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/1be722f78e945ae5fbb05da34ffa487321dc44a5/ROUND1_CORRECTED_ADDENDUM.md
 - Corrected PDF:
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/1be722f78e945ae5fbb05da34ffa487321dc44a5/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf
 - Raw outputs and independent validator:
-  https://github.com/ahansardar/sequential-matching-hackathon/tree/d068901f75490e85aa86f7ae795f848d14cb43f4/results
+  https://github.com/ahansardar/sequential-matching-hackathon/tree/1be722f78e945ae5fbb05da34ffa487321dc44a5/results
   and
-  https://github.com/ahansardar/sequential-matching-hackathon/blob/d068901f75490e85aa86f7ae795f848d14cb43f4/experiments/validate_corrected_addendum.py
+  https://github.com/ahansardar/sequential-matching-hackathon/blob/1be722f78e945ae5fbb05da34ffa487321dc44a5/experiments/validate_corrected_addendum.py
 
 The new evidence weakens some of our original claims. We have kept those
 negative results in the report and aligned the final policy conclusion with

@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "items_closed": 33,
+  "closure_states": {
+    "fixed": 27,
+    "measured": 5,
+    "contract-excluded": 1
+  },
+  "submitted_policy_mode": "adaptive_greedy",
+  "evidence_revision": "1be722f78e945ae5fbb05da34ffa487321dc44a5",
+  "remote_revision_checked": true,
+  "report_markdown_sha256": "a592407bfb29f0b26186e2bea7b6f0fefca15b9c01c2a6731fd583ec36f1ee09",
+  "evidence_files": [
+    "corrected_allocation_outcomes.json",
+    "corrected_clarification_order.json",
+    "corrected_directional_calibration.json",
+    "corrected_history_seed_grouped.json",
+    "corrected_member_order.json",
+    "corrected_profile_completeness.json",
+    "corrected_profile_completeness_all_masked.json",
+    "corrected_safe_cardinality_no_history.json",
+    "corrected_sensitivity.json",
+    "corrected_wait_tie.json",
+    "edge_case_audit.json"
+  ]
+}
