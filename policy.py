@@ -38,7 +38,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--baseline',
         choices=[
-            'adaptive', 'adaptive_greedy', 'adaptive_always_max',
+            'adaptive', 'adaptive_greedy', 'adaptive_input_order_greedy',
+            'adaptive_always_max',
             'adaptive_legacy',
             'greedy', 'no_asks', 'random',
         ],

@@ -187,3 +187,30 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   (0.32825 versus 0.32867), the next official tie-break. It shortens median
   first-service wait by 0.175 days, which is reported as a service trade-off
   rather than evidence of better completed outcomes.
+
+## D-015: Remove input-order dependence from submitted clarification
+
+- **Status:** accepted as a correctness correction
+- **Date:** 10 October 2026
+- **Decision:** In the submitted `adaptive_greedy` mode, order incomplete
+  members by arrival day and then opaque member ID before spending the hard-
+  constraint ask budget. Keep `adaptive_input_order_greedy` only for the
+  matched comparison. Do not use member IDs as predictive features.
+- **Reason:** Reordering the same observable member records used to change who
+  received a question. The stable rule returns identical actions across 120
+  order-only permutations and keeps the same ask cost. On 20 fresh seed groups
+  across all six variants, it changed MSMI by +0.0208 per 100, with a 95%
+  seed-grouped interval from -0.0958 to 0.1417. That score effect is uncertain;
+  this is an order-invariance correction, not a claimed performance win.
+
+## D-016: Re-run organiser-facing diagnostics on the submitted mode
+
+- **Status:** accepted
+- **Date:** 10 October 2026
+- **Decision:** Run directional calibration and profile-completeness service
+  audits with `adaptive_greedy`, the actual container default. Add equal-
+  variant calibration, paired seed-clustered Brier differences, completeness
+  and opportunity subgroups, and arrival-by-opportunity service cells.
+- **Reason:** The first corrected evidence package explicitly called the old
+  `adaptive` research mode. Careful statistics on the wrong policy would not
+  answer the organiser's question about the submitted method.

@@ -22,10 +22,11 @@ if str(ROOT) not in sys.path:
 
 from adaptive import _feedback_history  # noqa: E402
 from evaluate import VARIANTS  # noqa: E402
-from kit import SOFT, Simulator, generate  # noqa: E402
+from kit import SOFT, Simulator, eligibility, generate  # noqa: E402
 from outcome_model import comparison_features, pair_comparisons  # noqa: E402
 from policy import decide  # noqa: E402
 from experiments.train_outcome_model import _fit_logistic  # noqa: E402
+from experiments.outcome_events import recorded_yes_by_deadline  # noqa: E402
 
 
 TARGET_A = "user_a_recorded_yes_by_response_deadline"
@@ -74,17 +75,44 @@ def _base_features(actor, other):
     return values
 
 
+def _opportunity_count(actor, members):
+    return sum(
+        other.get("member_id") != actor.get("member_id")
+        and other.get("available")
+        and eligibility(actor, other)["status"] != "infeasible"
+        for other in members.values()
+    )
+
+
+def _completeness_band(count):
+    if count == 0:
+        return "0"
+    if count <= 2:
+        return "1-2"
+    if count <= 6:
+        return "3-6"
+    return "7"
+
+
+def _opportunity_band(count):
+    if count == 0:
+        return "0"
+    if count <= 4:
+        return "1-4"
+    return "5+"
+
+
 def collect_episode(seed, variant):
     simulator = Simulator(generate(seed, 200, "directional_calibration", variant))
     memory = None
     snapshots = {}
     for _ in range(60):
-        ask = decide({"phase": "ask", "state": simulator.observe(), "memory": memory}, "adaptive")
+        ask = decide({"phase": "ask", "state": simulator.observe(), "memory": memory}, "adaptive_greedy")
         simulator.resolve_asks(ask["asks"])
         state = simulator.observe()
         members = {member["member_id"]: member for member in state["members"]}
         histories = _feedback_history(state)
-        match = decide({"phase": "match", "state": state, "memory": ask["memory"]}, "adaptive")
+        match = decide({"phase": "match", "state": state, "memory": ask["memory"]}, "adaptive_greedy")
         previous = len(state["introductions"])
         simulator.advance(match["pairs"])
         new_introductions = simulator.observe()["introductions"][previous:]
@@ -101,10 +129,20 @@ def collect_episode(seed, variant):
                 TARGET_A: {
                     "base": _base_features(members[user_a], members[user_b]),
                     "history": _history_snapshot(histories, user_a),
+                    "soft_observed_count": sum(
+                        members[user_a].get("fields", {}).get(field) is not None
+                        for field in SOFT
+                    ),
+                    "candidate_opportunity_count": _opportunity_count(members[user_a], members),
                 },
                 TARGET_B: {
                     "base": _base_features(members[user_b], members[user_a]),
                     "history": _history_snapshot(histories, user_b),
+                    "soft_observed_count": sum(
+                        members[user_b].get("fields", {}).get(field) is not None
+                        for field in SOFT
+                    ),
+                    "candidate_opportunity_count": _opportunity_count(members[user_b], members),
                 },
                 "assigned_day": introduction["assigned_day"],
                 "response_deadline_day": introduction["response_deadline_day"],
@@ -126,23 +164,19 @@ def collect_episode(seed, variant):
         snapshot = snapshots[intro_id]
         if introduction["response_deadline_day"] > final_state["day"]:
             raise AssertionError("right-censored response entered calibration data")
-        response_by_member = {
-            event["member_id"]: event
-            for event in events_by_intro.get(intro_id, [])
-            if event["event"] == "introduction_response"
-        }
+        intro_events = events_by_intro.get(intro_id, [])
         for target, member_id in (
             (TARGET_A, introduction["user_a"]),
             (TARGET_B, introduction["user_b"]),
         ):
-            event = response_by_member.get(member_id)
-            if event is None:
+            response_events = [
+                event for event in intro_events
+                if event.get("event") == "introduction_response"
+                and event.get("member_id") == member_id
+            ]
+            if not response_events:
                 raise AssertionError("mature introduction is missing its response event")
-            label = int(
-                event.get("value") == "yes"
-                and event.get("occurred_day") is not None
-                and event["occurred_day"] <= introduction["response_deadline_day"]
-            )
+            label = int(recorded_yes_by_deadline(introduction, intro_events, member_id))
             rows.append({
                 "seed": seed,
                 "variant": variant,
@@ -150,6 +184,8 @@ def collect_episode(seed, variant):
                 "label": label,
                 "base": snapshot[target]["base"],
                 "history": snapshot[target]["history"],
+                "soft_observed_count": snapshot[target]["soft_observed_count"],
+                "candidate_opportunity_count": snapshot[target]["candidate_opportunity_count"],
             })
     return rows
 
@@ -274,6 +310,24 @@ def _auc(rows):
     return (rank_sum - positives * (positives + 1) / 2) / (positives * negatives)
 
 
+def _equal_count_bins(rows, count=10):
+    ordered = sorted(rows, key=lambda row: row["prediction"])
+    bins = []
+    for index in range(min(count, len(ordered))):
+        start = index * len(ordered) // min(count, len(ordered))
+        end = (index + 1) * len(ordered) // min(count, len(ordered))
+        selected = ordered[start:end]
+        if selected:
+            bins.append({
+                "count": len(selected),
+                "minimum_prediction": min(row["prediction"] for row in selected),
+                "maximum_prediction": max(row["prediction"] for row in selected),
+                "mean_prediction": statistics.mean(row["prediction"] for row in selected),
+                "observed_rate": statistics.mean(row["label"] for row in selected),
+            })
+    return bins
+
+
 def calibration_metrics(rows):
     if not rows:
         raise ValueError("calibration group is empty")
@@ -302,6 +356,7 @@ def calibration_metrics(rows):
         + (1 - label) * math.log(min(1 - 1e-12, max(1e-12, 1 - prediction)))
         for prediction, label in zip(predictions, labels)
     )
+    equal_count_bins = _equal_count_bins(rows)
     return {
         "examples": len(rows),
         "positives": sum(labels),
@@ -316,6 +371,11 @@ def calibration_metrics(rows):
             for item in bins
         ),
         "equal_width_bins": bins,
+        "equal_count_expected_calibration_error": sum(
+            item["count"] / len(rows) * abs(item["mean_prediction"] - item["observed_rate"])
+            for item in equal_count_bins
+        ),
+        "equal_count_bins": equal_count_bins,
     }
 
 
@@ -329,38 +389,194 @@ def _percentile(values, probability):
 
 
 def seed_cluster_intervals(rows, resamples, bootstrap_seed):
+    if resamples < 1:
+        raise ValueError("resamples must be positive")
     seeds = sorted({row["seed"] for row in rows})
     variants = sorted({row["variant"] for row in rows})
+    if not seeds or not variants:
+        raise ValueError("calibration rows must not be empty")
     for seed in seeds:
         present = {row["variant"] for row in rows if row["seed"] == seed}
         if present != set(variants):
             raise ValueError("every calibration seed must contain every variant")
-    by_seed = {seed: [row for row in rows if row["seed"] == seed] for seed in seeds}
+    bin_by_row = {}
+    for variant in variants:
+        variant_rows = sorted(
+            (row for row in rows if row["variant"] == variant),
+            key=lambda row: row["prediction"],
+        )
+        bin_count = min(10, len(variant_rows))
+        for index, row in enumerate(variant_rows):
+            bin_by_row[id(row)] = min(bin_count - 1, index * bin_count // len(variant_rows))
+
+    by_seed = {}
+    for seed in seeds:
+        by_seed[seed] = {}
+        for variant in variants:
+            selected = [
+                row for row in rows
+                if row["seed"] == seed and row["variant"] == variant
+            ]
+            bins = [
+                {"count": 0, "prediction_sum": 0.0, "label_sum": 0.0}
+                for _ in range(min(10, sum(row["variant"] == variant for row in rows)))
+            ]
+            for row in selected:
+                item = bins[bin_by_row[id(row)]]
+                item["count"] += 1
+                item["prediction_sum"] += row["prediction"]
+                item["label_sum"] += row["label"]
+            by_seed[seed][variant] = {
+                "count": len(selected),
+                "brier_sum": sum(
+                    (row["prediction"] - row["label"]) ** 2 for row in selected
+                ),
+                "calibration_sum": sum(
+                    row["prediction"] - row["label"] for row in selected
+                ),
+                "bins": bins,
+            }
     generator = random.Random(bootstrap_seed)
-    samples = {"brier_score": [], "calibration_in_the_large": []}
+    samples = {
+        "brier_score": [],
+        "calibration_in_the_large": [],
+        "equal_count_expected_calibration_error": [],
+    }
     for _ in range(resamples):
         selected = [generator.choice(seeds) for _ in seeds]
-        sampled_rows = [row for seed in selected for row in by_seed[seed]]
-        # Only these two statistics receive intervals. Computing AUC and bins
-        # inside every bootstrap draw adds sorting work without changing them.
-        samples["brier_score"].append(statistics.mean(
-            (row["prediction"] - row["label"]) ** 2 for row in sampled_rows
-        ))
-        samples["calibration_in_the_large"].append(
-            statistics.mean(row["prediction"] - row["label"] for row in sampled_rows)
-        )
+        variant_metrics = {}
+        for variant in variants:
+            parts = [by_seed[selected_seed][variant] for selected_seed in selected]
+            count = sum(part["count"] for part in parts)
+            bin_totals = []
+            for bin_index in range(len(parts[0]["bins"])):
+                bin_totals.append({
+                    "count": sum(part["bins"][bin_index]["count"] for part in parts),
+                    "prediction_sum": sum(
+                        part["bins"][bin_index]["prediction_sum"] for part in parts
+                    ),
+                    "label_sum": sum(
+                        part["bins"][bin_index]["label_sum"] for part in parts
+                    ),
+                })
+            variant_metrics[variant] = {
+                "brier_score": sum(part["brier_sum"] for part in parts) / count,
+                "calibration_in_the_large": sum(
+                    part["calibration_sum"] for part in parts
+                ) / count,
+                "equal_count_expected_calibration_error": sum(
+                    abs(item["prediction_sum"] - item["label_sum"])
+                    for item in bin_totals
+                ) / count,
+            }
+        for metric in samples:
+            samples[metric].append(statistics.mean(
+                variant_metrics[variant][metric] for variant in variants
+            ))
     return {
-        "method": "percentile bootstrap clustered by seed",
+        "method": "percentile bootstrap clustered by seed with equal scenario weighting",
         "seed_groups": len(seeds),
         "variants_per_seed": len(variants),
         "resamples": resamples,
         "bootstrap_seed": bootstrap_seed,
+        "ece_bins": "fixed holdout equal-count bins within each scenario variant",
         "intervals": {
             name: {
                 "lower": _percentile(values, 0.025),
                 "upper": _percentile(values, 0.975),
             }
             for name, values in samples.items()
+        },
+    }
+
+
+def paired_brier_difference_intervals(rows, reference_rows, resamples, bootstrap_seed):
+    """Compare predictions while keeping each generated seed world together."""
+    if resamples < 1:
+        raise ValueError("resamples must be positive")
+    if len(rows) != len(reference_rows) or not rows:
+        raise ValueError("paired prediction sets must have the same nonzero length")
+    for observed, reference in zip(rows, reference_rows):
+        identity = ("seed", "variant", "target", "label")
+        if any(observed[key] != reference[key] for key in identity):
+            raise ValueError("paired prediction rows are not aligned")
+    seeds = sorted({row["seed"] for row in rows})
+    variants = sorted({row["variant"] for row in rows})
+    for seed in seeds:
+        present = {row["variant"] for row in rows if row["seed"] == seed}
+        if present != set(variants):
+            raise ValueError("every paired seed must contain every variant")
+    paired = [
+        dict(
+            seed=row["seed"],
+            variant=row["variant"],
+            difference=(row["prediction"] - row["label"]) ** 2
+            - (reference["prediction"] - reference["label"]) ** 2,
+        )
+        for row, reference in zip(rows, reference_rows)
+    ]
+    by_seed = {
+        seed: {
+            variant: {
+                "count": sum(
+                    row["seed"] == seed and row["variant"] == variant for row in paired
+                ),
+                "sum": sum(
+                    row["difference"] for row in paired
+                    if row["seed"] == seed and row["variant"] == variant
+                ),
+            }
+            for variant in variants
+        }
+        for seed in seeds
+    }
+
+    def macro_mean(selected_seeds):
+        return statistics.mean(
+            sum(by_seed[seed][variant]["sum"] for seed in selected_seeds)
+            / sum(by_seed[seed][variant]["count"] for seed in selected_seeds)
+            for variant in variants
+        )
+
+    generator = random.Random(bootstrap_seed)
+    samples = []
+    for _ in range(resamples):
+        selected = [generator.choice(seeds) for _ in seeds]
+        samples.append(macro_mean(selected))
+    return {
+        "metric": "challenger Brier minus reference Brier",
+        "mean_difference": macro_mean(seeds),
+        "method": "paired percentile bootstrap clustered by seed with equal scenario weighting",
+        "seed_groups": len(seeds),
+        "variants_per_seed": len(variants),
+        "resamples": resamples,
+        "bootstrap_seed": bootstrap_seed,
+        "confidence_level": 0.95,
+        "lower": _percentile(samples, 0.025),
+        "upper": _percentile(samples, 0.975),
+    }
+
+
+def equal_variant_metrics(rows, variants):
+    """Average scenario metrics equally instead of weighting by assignments."""
+    by_variant = {
+        variant: calibration_metrics([row for row in rows if row["variant"] == variant])
+        for variant in variants
+    }
+    metrics = (
+        "observed_rate",
+        "mean_prediction",
+        "calibration_in_the_large",
+        "brier_score",
+        "log_loss",
+        "expected_calibration_error",
+        "equal_count_expected_calibration_error",
+    )
+    return {
+        "scenario_weighting": "equal",
+        **{
+            metric: statistics.mean(by_variant[variant][metric] for variant in variants)
+            for metric in metrics
         },
     }
 
@@ -405,6 +621,22 @@ def run_audit(
         dict(row, prediction=model["cold_start_priors"]["yes_by_deadline_mean"])
         for row in holdout_rows
     ]
+    by_profile_completeness = {
+        band: calibration_metrics([
+            row for row in evaluated
+            if _completeness_band(row["soft_observed_count"]) == band
+        ])
+        for band in ("0", "1-2", "3-6", "7")
+        if any(_completeness_band(row["soft_observed_count"]) == band for row in evaluated)
+    }
+    by_candidate_opportunity = {
+        band: calibration_metrics([
+            row for row in evaluated
+            if _opportunity_band(row["candidate_opportunity_count"]) == band
+        ])
+        for band in ("0", "1-4", "5+")
+        if any(_opportunity_band(row["candidate_opportunity_count"]) == band for row in evaluated)
+    }
     return {
         "design": {
             "targets": {
@@ -416,6 +648,8 @@ def run_audit(
             "maturity": "All assignments receive 40 follow-up days; no right-censored response enters evaluation.",
             "feature_time": "Public observation immediately before assignment; no member ID, latent truth or future feedback is used.",
             "policy_use": "Separate diagnostic only; probabilities do not rank pairs in the selected policy.",
+            "policy_mode": "adaptive_greedy",
+            "scenario_weighting": "equal in reported macro metrics and seed-clustered intervals",
             "training_seeds": training_seeds,
             "calibration_seeds": calibration_seeds,
             "holdout_seeds": holdout_seeds,
@@ -433,13 +667,24 @@ def run_audit(
         "model": model,
         "holdout": {
             "overall": overall,
+            "equal_variant_overall": equal_variant_metrics(evaluated, variants),
             "before_platt_calibration": calibration_metrics(raw_evaluated),
+            "before_platt_equal_variant": equal_variant_metrics(raw_evaluated, variants),
             "by_target": by_target,
             "by_variant": by_variant,
+            "by_profile_completeness": by_profile_completeness,
+            "by_candidate_opportunity": by_candidate_opportunity,
             "seed_cluster_intervals": seed_cluster_intervals(
                 evaluated, resamples, bootstrap_seed,
             ),
             "constant_training_prevalence_baseline": calibration_metrics(baseline_rows),
+            "constant_baseline_equal_variant": equal_variant_metrics(baseline_rows, variants),
+            "paired_brier_vs_constant": paired_brier_difference_intervals(
+                evaluated, baseline_rows, resamples, bootstrap_seed + 1,
+            ),
+            "paired_brier_platt_minus_raw": paired_brier_difference_intervals(
+                evaluated, raw_evaluated, resamples, bootstrap_seed + 2,
+            ),
             "predictions": [
                 {
                     "seed": calibrated["seed"],
@@ -448,6 +693,8 @@ def run_audit(
                     "label": calibrated["label"],
                     "prediction": calibrated["prediction"],
                     "before_platt_prediction": raw["prediction"],
+                    "soft_observed_count": calibrated["soft_observed_count"],
+                    "candidate_opportunity_count": calibrated["candidate_opportunity_count"],
                 }
                 for calibrated, raw in zip(evaluated, raw_evaluated)
             ],

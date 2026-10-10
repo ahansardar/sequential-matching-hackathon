@@ -174,9 +174,10 @@ win or describe real relationship outcomes.
 
 | Mode | Purpose |
 |---|---|
-| `adaptive` | Current guarded-history safe-cardinality policy |
+| `adaptive` | Guarded-history safe-cardinality research policy |
 | `adaptive_legacy` | Previous safe-cardinality policy without history |
-| `adaptive_greedy` | Allocation ablation that reproduces the supplied greedy batch |
+| `adaptive_greedy` | Corrected default: stable asks and greedy allocation |
+| `adaptive_input_order_greedy` | Former input-order asks with greedy allocation |
 | `adaptive_always_max` | Removes the safety guard and always uses maximum cardinality |
 
 The supplied `greedy`, `no_asks` and `random` modes remain available as official
@@ -209,7 +210,9 @@ well below the 2 GiB limit. The local proof is
 - Member history is sparse and noisy, especially shortly after day 20.
 - The history improvement is not statistically clear on the untouched holdout.
 - Equal soft-field counts favor pairs with more observed answers.
-- Clarification selects the first eligible records in state order.
+- The research `adaptive` mode still selects eligible records in state order
+  so its earlier results remain reproducible. The submitted `adaptive_greedy`
+  mode uses an order-invariant arrival-day and opaque-ID tie-break.
 - The history signal estimates each person's general behavior, not their
   response to one particular partner.
 - Cold-start and sparse pools can still have very few feasible edges.

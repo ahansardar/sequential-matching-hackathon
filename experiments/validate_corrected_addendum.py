@@ -127,6 +127,8 @@ def _validate_profile(filename, expected_rate):
         raise AssertionError("unmasked profile arm contains masked rows")
     if any(row["mask_rate"] != expected_rate for row in after_keys.values()):
         raise AssertionError("profile mask rate does not match the file")
+    if design.get("policy_mode") != "adaptive_greedy":
+        raise AssertionError("profile audit did not run the submitted policy mode")
     for metric, analysis in payload["paired_masked_minus_unmasked"].items():
         _validate_analysis(analysis, before, after, seeds, variants, metric)
     for condition in ("unmasked", "masked"):
@@ -134,6 +136,12 @@ def _validate_profile(filename, expected_rate):
         episode_total = sum(row["arrived_members"] for row in payload["conditions"][condition]["episodes"])
         if total != episode_total:
             raise AssertionError(f"profile member total mismatch in {condition}")
+        cell_total = sum(
+            cell["members"]
+            for cell in payload["conditions"][condition]["opportunity_adjusted_service_cells"]
+        )
+        if cell_total != episode_total:
+            raise AssertionError(f"profile service-cell total mismatch in {condition}")
     return set(seeds)
 
 
@@ -147,6 +155,8 @@ def _validate_calibration():
         raise AssertionError("directional calibration seed splits overlap")
     if set(design["variants"]) != EXPECTED_VARIANTS:
         raise AssertionError("directional calibration does not contain all variants")
+    if design.get("policy_mode") != "adaptive_greedy":
+        raise AssertionError("directional calibration did not run the submitted policy mode")
     if payload["sample"]["right_censored_holdout_examples"] != 0:
         raise AssertionError("directional holdout contains right-censored examples")
     overall = payload["holdout"]["overall"]
@@ -175,7 +185,47 @@ def _validate_calibration():
         ),
         "directional holdout Brier score",
     )
+    macro_brier = statistics.mean(
+        statistics.mean(
+            (row["prediction"] - row["label"]) ** 2
+            for row in predictions if row["variant"] == variant
+        )
+        for variant in design["variants"]
+    )
+    _assert_close(
+        payload["holdout"]["equal_variant_overall"]["brier_score"],
+        macro_brier,
+        "equal-variant directional Brier score",
+    )
+    intervals = payload["holdout"]["seed_cluster_intervals"]
+    if "equal_count_expected_calibration_error" not in intervals["intervals"]:
+        raise AssertionError("equal-count ECE lacks a seed-clustered interval")
+    if "fixed holdout" not in intervals.get("ece_bins", ""):
+        raise AssertionError("ECE interval does not declare fixed holdout bins")
+    for name in ("paired_brier_vs_constant", "paired_brier_platt_minus_raw"):
+        comparison = payload["holdout"][name]
+        if comparison["seed_groups"] != len(holdout):
+            raise AssertionError(f"wrong seed-group count in {name}")
+        if comparison["variants_per_seed"] != len(design["variants"]):
+            raise AssertionError(f"wrong scenario count in {name}")
+    if not payload["holdout"].get("by_profile_completeness"):
+        raise AssertionError("directional calibration lacks completeness groups")
+    if not payload["holdout"].get("by_candidate_opportunity"):
+        raise AssertionError("directional calibration lacks opportunity groups")
     return train | calibrate | holdout
+
+
+def _validate_edge_cases():
+    payload = _load("edge_case_audit.json")
+    if payload.get("status") != "passed":
+        raise AssertionError("edge-case audit did not pass")
+    if payload.get("policy_mode") != "adaptive_greedy":
+        raise AssertionError("edge-case audit did not run the submitted mode")
+    if payload.get("dense_graph_members") != 200 or payload.get("dense_graph_pairs") != 100:
+        raise AssertionError("dense-graph boundary was not exercised")
+    if payload.get("order_only_permutations_checked", 0) < 100:
+        raise AssertionError("too few order-only permutations were checked")
+    return set(payload["seed_worlds"])
 
 
 def main():
@@ -187,6 +237,8 @@ def main():
         "profile_half_mask": _validate_profile("corrected_profile_completeness.json", 0.5),
         "profile_all_mask": _validate_profile("corrected_profile_completeness_all_masked.json", 1.0),
         "directional_calibration": _validate_calibration(),
+        "member_order": _validate_component("corrected_member_order.json"),
+        "edge_cases": _validate_edge_cases(),
     }
     # The profile studies intentionally reuse the same worlds, including their
     # unmasked arm. Every other corrected study has its own seed block.
@@ -201,7 +253,7 @@ def main():
                 )
     print(json.dumps({
         "status": "passed",
-        "files": 7,
+        "files": 9,
         "checks": [
             "finite JSON numbers",
             "complete seed-by-variant blocks",
@@ -211,6 +263,10 @@ def main():
             "disjoint corrected-study seed blocks",
             "disjoint fit/calibration/holdout seeds",
             "zero right-censored directional examples",
+            "submitted policy mode used by calibration and service audits",
+            "equal-variant calibration and paired Brier intervals",
+            "opportunity-adjusted service cells",
+            "order-invariant policy actions and dense-graph boundary",
         ],
     }, indent=2))
 

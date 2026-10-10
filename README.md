@@ -50,6 +50,7 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, history gate, safety guard, evidence and ablations |
 | [docs/CONFIDENCE_AUDIT.md](docs/CONFIDENCE_AUDIT.md) | Matched-seed uncertainty checks and the evidence rule used for claims |
+| [docs/EDGE_CASE_REGISTER.md](docs/EDGE_CASE_REGISTER.md) | Runtime, timing, evidence and service edge cases with rerunnable checks |
 | [docs/OUTCOME_MODEL_EXPERIMENT.md](docs/OUTCOME_MODEL_EXPERIMENT.md) | Learned-scoring experiment, training split and rejection evidence |
 | [docs/PAIR_SCORER_EXPERIMENT.md](docs/PAIR_SCORER_EXPERIMENT.md) | Pair scorer, clarification and conservative formula rejection evidence |
 | [docs/CAVIA_ALGORITHM.md](docs/CAVIA_ALGORITHM.md) | Rejected prototype retained as experiment history |
@@ -61,11 +62,14 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 
 Edit `policy.py`, keeping the JSON interface. Observe only the input state. Refreshing observations after clarification is handled by the evaluator. Policy memory is passed explicitly between calls and reset between episodes.
 
-The default executable mode is `adaptive_greedy`: reciprocal feasibility,
-observed compatibility and deterministic greedy allocation. The history and
+The default executable mode is `adaptive_greedy`: stable arrival-day then
+opaque-ID clarification order, reciprocal feasibility, observed compatibility
+and deterministic greedy allocation. The history and
 guarded-cardinality method remains available as `adaptive`, the no-history
 guarded allocator as `adaptive_legacy`, and always-maximum allocation as
 `adaptive_always_max`. They are research ablations, not the corrected default.
+`adaptive_input_order_greedy` reproduces the former order-sensitive
+clarification rule for the matched comparison only.
 
 ```bash
 python evaluate.py --baseline adaptive_greedy --seeds 101,102,103 --variants all --output results/adaptive_greedy.json

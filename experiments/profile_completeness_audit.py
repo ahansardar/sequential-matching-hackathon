@@ -23,11 +23,13 @@ if str(ROOT) not in sys.path:
 
 from evaluate import VARIANTS, summarise  # noqa: E402
 from experiments.confidence_audit import paired_analysis  # noqa: E402
-from kit import SOFT, Simulator, generate  # noqa: E402
+from kit import SOFT, Simulator, eligibility, generate  # noqa: E402
 from policy import decide  # noqa: E402
+from experiments.outcome_events import classify_funnel  # noqa: E402
 
 
 BAND_ORDER = ("0", "1-2", "3-6", "7")
+OPPORTUNITY_ORDER = ("0", "1-4", "5-14", "15+")
 
 
 def completeness_band(count):
@@ -38,6 +40,36 @@ def completeness_band(count):
     if count <= 6:
         return "3-6"
     return "7"
+
+
+def opportunity_band(count):
+    if count == 0:
+        return "0"
+    if count <= 4:
+        return "1-4"
+    if count <= 14:
+        return "5-14"
+    return "15+"
+
+
+def arrival_band(day):
+    if day == 0:
+        return "0"
+    if day <= 10:
+        return "1-10"
+    return "11-20"
+
+
+def _initial_opportunity(member, members):
+    statuses = [
+        eligibility(member, other)["status"]
+        for other in members
+        if other.get("available") and other.get("member_id") != member.get("member_id")
+    ]
+    return {
+        "not_ruled_out": sum(status != "infeasible" for status in statuses),
+        "decidable_feasible": sum(status == "feasible" for status in statuses),
+    }
 
 
 def _percentile(values, probability):
@@ -84,34 +116,13 @@ def _outcome_sets(state):
     for introduction in state["introductions"]:
         intro_id = introduction["introduction_id"]
         intro_events = by_intro.get(intro_id, [])
-        responses = [
-            event for event in intro_events
-            if event["event"] == "introduction_response"
-        ]
-        if len(responses) == 2 and all(event.get("value") == "yes" for event in responses):
+        outcome = classify_funnel(introduction, intro_events)
+        if outcome["mutual_acceptance"]:
             mutual.add(intro_id)
-        date_events = [
-            event for event in intro_events
-            if event["event"] == "date_happened" and event.get("value") is True
-        ]
-        if date_events:
+        if outcome["date_happened"]:
             dates.add(intro_id)
-            date_day = date_events[0]["occurred_day"]
-            second = [
-                event for event in intro_events
-                if event["event"] == "second_meeting_intention"
-            ]
-            if (
-                date_day - introduction["assigned_day"] <= 30
-                and len(second) == 2
-                and all(
-                    event.get("value") == "yes"
-                    and event.get("occurred_day") is not None
-                    and event["occurred_day"] - date_day <= 3
-                    for event in second
-                )
-            ):
-                msmi.add(intro_id)
+        if outcome["msmi"]:
+            msmi.add(intro_id)
     return mutual, dates, msmi
 
 
@@ -119,18 +130,22 @@ def profile_episode(seed, variant, mask_rate):
     simulator = Simulator(generate(seed, 200, "profile_completeness", variant))
     memory = None
     initial_counts = {}
+    initial_opportunities = {}
     for _ in range(60):
         raw_ask_state = simulator.observe()
         for member in raw_ask_state["members"]:
-            initial_counts.setdefault(
-                member["member_id"],
-                sum(member.get("fields", {}).get(field) is not None for field in SOFT),
-            )
+            if member["member_id"] not in initial_counts:
+                initial_counts[member["member_id"]] = sum(
+                    member.get("fields", {}).get(field) is not None for field in SOFT
+                )
+                initial_opportunities[member["member_id"]] = _initial_opportunity(
+                    member, raw_ask_state["members"]
+                )
         ask_state = mask_soft_information(raw_ask_state, seed, mask_rate)
-        ask = decide({"phase": "ask", "state": ask_state, "memory": memory}, "adaptive")
+        ask = decide({"phase": "ask", "state": ask_state, "memory": memory}, "adaptive_greedy")
         simulator.resolve_asks(ask["asks"])
         match_state = mask_soft_information(simulator.observe(), seed, mask_rate)
-        match = decide({"phase": "match", "state": match_state, "memory": ask["memory"]}, "adaptive")
+        match = decide({"phase": "match", "state": match_state, "memory": ask["memory"]}, "adaptive_greedy")
         simulator.advance(match["pairs"])
         memory = match["memory"]
 
@@ -176,6 +191,11 @@ def profile_episode(seed, variant, mask_rate):
             if any(item["introduction_id"] in msmi_ids for item in introductions_by_member[member_id])
         }
         size = len(member_ids)
+        potential_ids = [
+            member_id for member_id in member_ids
+            if initial_opportunities[member_id]["not_ruled_out"] > 0
+        ]
+        served_with_potential = sum(member_id in served for member_id in potential_ids)
         group_rows[band] = {
             "members": size,
             "served_members": len(served),
@@ -195,7 +215,39 @@ def profile_episode(seed, variant, mask_rate):
             "median_wait_days_served": statistics.median(waits) if waits else None,
             "p90_wait_days_served": _percentile(waits, 0.90),
             "wait_days_served": waits,
+            "members_with_potential_partner": len(potential_ids),
+            "served_members_with_potential_partner": served_with_potential,
+            "coverage_given_potential_partner": (
+                served_with_potential / len(potential_ids) if potential_ids else None
+            ),
+            "mean_initial_not_ruled_out_partners": statistics.mean(
+                initial_opportunities[member_id]["not_ruled_out"] for member_id in member_ids
+            ) if member_ids else None,
+            "mean_initial_decidable_feasible_partners": statistics.mean(
+                initial_opportunities[member_id]["decidable_feasible"] for member_id in member_ids
+            ) if member_ids else None,
         }
+
+    service_cells = []
+    for band in BAND_ORDER:
+        for opportunity in OPPORTUNITY_ORDER:
+            for arrival in ("0", "1-10", "11-20"):
+                member_ids = [
+                    member_id for member_id in arrived
+                    if completeness_band(initial_counts[member_id]) == band
+                    and opportunity_band(initial_opportunities[member_id]["not_ruled_out"]) == opportunity
+                    and arrival_band(arrived[member_id]) == arrival
+                ]
+                if member_ids:
+                    served_count = sum(bool(introductions_by_member[member_id]) for member_id in member_ids)
+                    service_cells.append({
+                        "profile_band": band,
+                        "opportunity_band": opportunity,
+                        "arrival_band": arrival,
+                        "members": len(member_ids),
+                        "served_members": served_count,
+                        "coverage": served_count / len(member_ids),
+                    })
 
     result = simulator.metrics()
     first = {
@@ -217,6 +269,7 @@ def profile_episode(seed, variant, mask_rate):
         "msmi_per_100_arrived_members": 100 * result["mutual_second_meeting_intention"] / max(1, denominator),
         "inference_seconds": 0.0,
         "groups": group_rows,
+        "service_cells": service_cells,
     })
     nonempty = [group for group in group_rows.values() if group["members"]]
     result["coverage_gap_max_minus_min"] = max(group["coverage"] for group in nonempty) - min(
@@ -228,6 +281,13 @@ def profile_episode(seed, variant, mask_rate):
     result["msmi_member_rate_gap_max_minus_min"] = max(
         group["msmi_member_rate"] for group in nonempty
     ) - min(group["msmi_member_rate"] for group in nonempty)
+    conditional = [
+        group["coverage_given_potential_partner"] for group in nonempty
+        if group["coverage_given_potential_partner"] is not None
+    ]
+    result["coverage_given_potential_partner_gap_max_minus_min"] = (
+        max(conditional) - min(conditional) if conditional else 0.0
+    )
     return result
 
 
@@ -241,6 +301,8 @@ def aggregate_groups(rows):
         groups = [row["groups"][band] for row in rows]
         members = sum(group["members"] for group in groups)
         served = sum(group["served_members"] for group in groups)
+        potential = sum(group["members_with_potential_partner"] for group in groups)
+        potential_served = sum(group["served_members_with_potential_partner"] for group in groups)
         waits = [value for group in groups for value in group["wait_days_served"]]
         output[band] = {
             "members": members,
@@ -256,8 +318,40 @@ def aggregate_groups(rows):
             "mean_assignments_per_member": sum(group["assignments"] for group in groups) / max(1, members),
             "median_wait_days_served": statistics.median(waits) if waits else None,
             "p90_wait_days_served": _percentile(waits, 0.90),
+            "members_with_potential_partner": potential,
+            "coverage_given_potential_partner": (
+                potential_served / potential if potential else None
+            ),
+            "mean_initial_not_ruled_out_partners": sum(
+                (group["mean_initial_not_ruled_out_partners"] or 0) * group["members"]
+                for group in groups
+            ) / max(1, members),
+            "mean_initial_decidable_feasible_partners": sum(
+                (group["mean_initial_decidable_feasible_partners"] or 0) * group["members"]
+                for group in groups
+            ) / max(1, members),
         }
     return output
+
+
+def aggregate_service_cells(rows):
+    keyed = {}
+    for row in rows:
+        for cell in row["service_cells"]:
+            key = (cell["profile_band"], cell["opportunity_band"], cell["arrival_band"])
+            target = keyed.setdefault(key, {"members": 0, "served_members": 0})
+            target["members"] += cell["members"]
+            target["served_members"] += cell["served_members"]
+    return [
+        {
+            "profile_band": key[0],
+            "opportunity_band": key[1],
+            "arrival_band": key[2],
+            **counts,
+            "coverage": counts["served_members"] / counts["members"],
+        }
+        for key, counts in sorted(keyed.items())
+    ]
 
 
 def run_audit(
@@ -289,6 +383,7 @@ def run_audit(
         "coverage_gap_max_minus_min",
         "unserved_rate_gap_max_minus_min",
         "msmi_member_rate_gap_max_minus_min",
+        "coverage_given_potential_partner_gap_max_minus_min",
     ):
         paired[metric] = paired_analysis(
             rows["unmasked"], rows["masked"],
@@ -300,6 +395,10 @@ def run_audit(
             "bands": list(BAND_ORDER),
             "controlled_condition": f"deterministically mask {mask_rate:.0%} of observed soft fields",
             "unchanged": ["generated worlds", "hard constraints", "policy code", "outcome process"],
+            "policy_mode": "adaptive_greedy",
+            "opportunity_measure": "available arrived partners not ruled out by observed reciprocal hard constraints when the member first appears",
+            "opportunity_limit": "not-ruled-out is an opportunity proxy, not proof that missing hard constraints will resolve as feasible",
+            "service_strata": ["initial soft-profile band", "arrival band", "initial opportunity band"],
             "paired_by": ["seed", "variant"],
             "bootstrap_cluster": "seed with every variant kept together",
             "seeds": seeds,
@@ -309,6 +408,7 @@ def run_audit(
             name: {
                 "summary": summarise(condition_rows),
                 "groups": aggregate_groups(condition_rows),
+                "opportunity_adjusted_service_cells": aggregate_service_cells(condition_rows),
                 "episodes": condition_rows,
             }
             for name, condition_rows in rows.items()

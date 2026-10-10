@@ -4,8 +4,10 @@ from __future__ import annotations
 import unittest
 
 from experiments.profile_completeness_audit import (
+    arrival_band,
     completeness_band,
     mask_soft_information,
+    opportunity_band,
 )
 from kit import Simulator, SOFT, generate
 
@@ -16,6 +18,14 @@ class ProfileCompletenessAuditTests(unittest.TestCase):
             [completeness_band(value) for value in range(8)],
             ["0", "1-2", "1-2", "3-6", "3-6", "3-6", "3-6", "7"],
         )
+
+    def test_service_strata_cover_arrival_and_opportunity_boundaries(self):
+        self.assertEqual([opportunity_band(value) for value in (0, 1, 4, 5, 14, 15)], [
+            "0", "1-4", "1-4", "5-14", "5-14", "15+",
+        ])
+        self.assertEqual([arrival_band(value) for value in (0, 1, 10, 11, 20)], [
+            "0", "1-10", "1-10", "11-20", "11-20",
+        ])
 
     def test_mask_is_deterministic_and_never_changes_hard_fields(self):
         state = Simulator(generate(6201, 40, "test", "development")).observe()

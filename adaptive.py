@@ -1,8 +1,8 @@
-"""Guarded-history policy for sequential reciprocal matching.
+"""Deterministic policies for sequential reciprocal matching.
 
-The policy keeps the supplied clarification and reciprocal feasibility rules.
-It ranks feasible pairs by observed compatibility, then adds a small mature-
-history signal from day 20. Inference uses only the observable JSON request.
+The submitted mode uses stable clarification ordering, reciprocal feasibility
+and greedy observed-compatibility allocation. Historical and global-allocation
+variants remain available only for reproducible research comparisons.
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import math
 from kit import HARD, SOFT, baseline_asks, eligibility
 
 
-VERSION = "guarded-history-2.1"
+VERSION = "observable-matching-3.0"
 HISTORY_START_DAY = 20
 RESPONSE_PRIOR = (0.765, 4.0)
 ACCEPT_PRIOR = (0.46, 4.0)
@@ -303,7 +303,7 @@ def _safe_batch(edges):
 
 def select_pairs(state, mode="adaptive"):
     compatibility = _compatibility_edges(state)
-    if mode == "adaptive_greedy":
+    if mode in ("adaptive_greedy", "adaptive_input_order_greedy"):
         edges = compatibility
         pairs = _greedy_pairs(compatibility)
     elif mode == "adaptive_history_greedy":
@@ -364,26 +364,56 @@ def _graph_aware_asks(state):
     ]
 
 
+def _stable_constraint_asks(state):
+    """Return an order-invariant, duplicate-safe hard-constraint ask batch."""
+    candidates = {}
+    for member in state.get("members", []):
+        member_id = member.get("member_id")
+        fields = member.get("fields", {})
+        statuses = member.get("field_status", {})
+        if (
+            not isinstance(member_id, str)
+            or member_id in candidates
+            or not member.get("available")
+            or not any(fields.get(field) is None for field in HARD)
+            or any(statuses.get(field) == "declined" for field in HARD)
+        ):
+            continue
+        candidates[member_id] = member
+
+    budget = state.get("ask_budget_remaining", 0)
+    count = max(0, budget // 3) if isinstance(budget, int) else 0
+    ranked = sorted(
+        candidates.values(),
+        key=lambda member: (member.get("arrived_day", 0), member["member_id"]),
+    )
+    return [
+        {"member_id": member["member_id"], "field": "constraints"}
+        for member in ranked[:count]
+    ]
+
+
 def plan_asks(state, mode="adaptive"):
     if mode == "adaptive_graph_asks":
         return _graph_aware_asks(state)
+    if mode == "adaptive_greedy":
+        return _stable_constraint_asks(state)
     return baseline_asks(state)
 
 
 def decide(request, mode="adaptive"):
     state = request["state"]
-    memory = request.get("memory") or {}
     if request["phase"] == "ask":
         return {
             "asks": plan_asks(state, mode=mode),
-            "memory": {"policy": VERSION, "day": state.get("day", 0)},
+            "memory": {"policy": VERSION, "mode": mode, "day": state.get("day", 0)},
         }
 
     pairs, edges = select_pairs(state, mode=mode)
-    next_memory = dict(memory)
-    next_memory.update({
+    next_memory = {
         "policy": VERSION,
+        "mode": mode,
         "day": state.get("day", 0),
         "candidate_edges": len(edges),
-    })
+    }
     return {"pairs": [list(pair) for pair in pairs], "memory": next_memory}

@@ -75,10 +75,15 @@ class AdaptivePolicyTests(unittest.TestCase):
             self.assertEqual([list(pair) for pair in pairs], baseline_match(state))
             simulator.advance([list(pair) for pair in pairs])
 
-    def test_asks_match_supplied_policy_and_stay_within_budget(self):
+    def test_asks_are_stable_and_stay_within_budget(self):
         state = Simulator(generate(3001, 80, "test", "cold_start")).observe()
-        first = plan_asks(state)
-        self.assertEqual(first, baseline_asks(state))
+        first = plan_asks(state, mode="adaptive_greedy")
+        reversed_state = dict(state, members=list(reversed(state["members"])))
+        self.assertEqual(first, plan_asks(reversed_state, mode="adaptive_greedy"))
+        self.assertEqual(
+            plan_asks(state, mode="adaptive_input_order_greedy"),
+            baseline_asks(state),
+        )
         self.assertEqual(len({(row["member_id"], row["field"]) for row in first}), len(first))
         cost = sum(3 if row["field"] == "constraints" else 1 for row in first)
         self.assertLessEqual(cost, state["ask_budget_remaining"])
