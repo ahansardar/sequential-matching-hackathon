@@ -21,12 +21,9 @@ DEFAULT_RESULTS = {
     "adaptive_greedy": ROOT / "results" / "round2_adaptive_greedy_101_103_all.json",
     "greedy": ROOT / "results" / "round2_greedy_101_103_all.json",
     "no_asks": ROOT / "results" / "round2_no_asks_101_103_all.json",
-    "random": ROOT / "results" / "round2_random_101_103_all.json",
+    "random": ROOT / "results" / "round2_random_assembled_101_103_all.json",
     "adaptive_input_order_greedy": (
         ROOT / "results" / "round2_input_order_ablation_101_103_all.json"
-    ),
-    "adaptive": (
-        ROOT / "results" / "round2_guarded_history_ablation_101_103_all.json"
     ),
 }
 EXPECTED_SEEDS = (101, 102, 103)
@@ -36,7 +33,7 @@ def _read_result(path: Path) -> dict:
     raw = path.read_bytes()
     payload = json.loads(raw)
     payload["_file"] = path.relative_to(ROOT).as_posix()
-    payload["_sha256"] = hashlib.sha256(raw).hexdigest()
+    payload["_sha256"] = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
     return payload
 
 
@@ -175,9 +172,8 @@ def main() -> int:
     except (FileNotFoundError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
         parser.error(str(error))
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(payload, indent=2, allow_nan=False) + "\n",
-        encoding="utf-8",
+    args.output.write_bytes(
+        (json.dumps(payload, indent=2, allow_nan=False) + "\n").encode("utf-8")
     )
     print(json.dumps({
         "output": str(args.output),

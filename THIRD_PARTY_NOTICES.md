@@ -11,7 +11,8 @@ The repository contains the following supplied or third-party components:
 | Sequential Matching Problem starter kit | Simulator, evaluator, interface, and starter files | [MIT starter licence](LICENSE) |
 | Public synthetic dataset | Development and public evaluation | [Synthetic data permission](DATA_LICENSE.md) |
 | Python 3.12.7 | Policy runtime | [Python Software Foundation licence](https://docs.python.org/3/license.html) |
-| `python:3.12.7-slim` | Offline container base image | Python licence plus the licences included in the Debian base image |
+| `python:3.12.7-slim` at digest `sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d` | Offline container base image | Python licence plus the licences included in the Debian base image |
+| ReportLab | Report PDF generation only, not the policy image | [BSD licence](https://hg.reportlab.com/hg-public/reportlab/file/tip/LICENSE.txt) |
 
 The LuminaX changes use the [LuminaX submission licence](LUMINAX_LICENSE.md).
 The assessed policy uses only Python standard-library modules.

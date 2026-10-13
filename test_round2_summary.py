@@ -54,7 +54,6 @@ class Round2SummaryTests(unittest.TestCase):
             "no_asks",
             "random",
             "adaptive_input_order_greedy",
-            "adaptive",
         ):
             path = root / f"{method}.json"
             path.write_text(json.dumps(result_payload(method)), encoding="utf-8")

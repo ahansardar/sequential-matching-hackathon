@@ -15,6 +15,15 @@ and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf). The
 organiser-feedback response is the [corrected evidence addendum](ROUND1_CORRECTED_ADDENDUM.md)
 with a [PDF copy](output/pdf/LuminaX_Round1_Corrected_Addendum.pdf).
 
+The Round 2 build is documented in the
+[final technical report](ROUND2_SUBMISSION.md) and
+[PDF copy](output/pdf/LuminaX_Round2_Final_Report.pdf). Its
+[machine-readable summary](results/round2_summary.json) links the submitted
+policy, all three required baselines, and the focused ablation on identical
+public seeds and scenarios. The
+[release manifest](round2_release_manifest.json) records the file hashes for
+the `round2-final-v1` snapshot.
+
 ### LuminaX reconsideration release
 
 Use the tagged snapshot below when reviewing or sharing the corrected package.
@@ -60,6 +69,10 @@ On Windows, use `py` instead of `python` if needed. On macOS/Linux, use `python3
 | [docs/ORGANISER_RUNBOOK.md](docs/ORGANISER_RUNBOOK.md) | Complete assessment commands and ranking procedure |
 | [Dockerfile](Dockerfile) | Offline container packaging for assessed inference |
 | [docs/SUBMISSION.md](docs/SUBMISSION.md) | Complete research and build submission instructions |
+| [ROUND2_SUBMISSION.md](ROUND2_SUBMISSION.md) | LuminaX final method, results, limits and reproduction commands |
+| [results/round2_summary.json](results/round2_summary.json) | Validated Round 2 method matrix and paired comparisons |
+| [LUMINAX_LICENSE.md](LUMINAX_LICENSE.md) | Licence for the team's submission work |
+| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | Runtime, starter-kit and dataset provenance |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Reusable adapter boundary for later Vouchsafe evaluation |
 | [docs/FAQ.md](docs/FAQ.md) | Common questions and communication policy |
 | [docs/SAFE_CARDINALITY_ALGORITHM.md](docs/SAFE_CARDINALITY_ALGORITHM.md) | Current policy, history gate, safety guard, evidence and ablations |
@@ -86,12 +99,32 @@ guarded allocator as `adaptive_legacy`, and always-maximum allocation as
 clarification rule for the matched comparison only.
 
 ```bash
-python evaluate.py --baseline adaptive_greedy --seeds 101,102,103 --variants all --output results/adaptive_greedy.json
+python evaluate.py --baseline adaptive_greedy --seeds 101,102,103 --variants all --output results/round2_adaptive_greedy_101_103_all.json
+python evaluate.py --baseline greedy --seeds 101,102,103 --variants all --output results/round2_greedy_101_103_all.json
+python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --output results/round2_no_asks_101_103_all.json
+python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/round2_random_101_103_all.json
+python evaluate.py --baseline adaptive_input_order_greedy --seeds 101,102,103 --variants all --output results/round2_input_order_ablation_101_103_all.json
+python experiments/build_round2_summary.py --output results/round2_summary.json
+```
+
+The published random-feasible matrix was assembled from two official evaluator
+runs after unrelated local CPU contention caused a different process-start
+timeout in each run. Every selected episode was valid, duplicate valid outcomes
+agreed, and the assembly script recomputed the summary:
+
+```bash
+python experiments/assemble_evaluation_retries.py --input results/round2_random_attempt2_timeout.json --input results/round2_random_attempt1_timeout.json --output results/round2_random_assembled_101_103_all.json
+python experiments/build_round2_summary.py --output results/round2_summary.json
+```
+
+The two timeout files are retained as provenance. On an idle machine, the
+single random command above should produce one valid matrix.
+
+Research-only comparisons use separate commands:
+
+```bash
 python evaluate.py --baseline adaptive --seeds 101,102,103 --variants all --output results/adaptive.json
 python evaluate.py --baseline adaptive_legacy --seeds 101,102,103 --variants all --output results/adaptive_legacy.json
-python evaluate.py --baseline greedy --seeds 101,102,103 --variants all --output results/greedy.json
-python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --output results/no_asks.json
-python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/random.json
 python experiments/allocation_telemetry.py --seeds 5301,5302,5303 --variants all --output results/allocation_telemetry.json
 python experiments/confidence_audit.py --incumbent adaptive_legacy --challenger adaptive --seeds 4001-4020 --variants all --resamples 20000 --output results/history_confidence.json
 ```

@@ -228,3 +228,19 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   0.0500. It also increased the 90th-percentile first-service wait by 0.4533
   days, with an interval from 0.0833 to 0.9383. The change neither improved
   the primary objective nor its intended service measure.
+
+## D-018: Freeze stable greedy as the Round 2 submitted method
+
+- **Status:** accepted for the Round 2 final build
+- **Date:** 14 October 2026
+- **Decision:** Keep `adaptive_greedy` as the container default. Submit the
+  stable input-order correction, reciprocal feasibility checks, observed-soft
+  compatibility score, and deterministic greedy allocation. Use
+  `adaptive_input_order_greedy` as the focused final ablation.
+- **Reason:** On the declared public seeds 101 to 103 across all six scenarios,
+  the submitted method scores 0.4444 MSMI per 100 arrived members versus 0.3889
+  for greedy. The paired seed-grouped difference is 0.0556 with a 95% interval
+  from 0.0000 to 0.0833. Coverage is slightly lower, 0.3700 versus 0.3717.
+  Three public seed groups are not enough to claim a repeatable private gain.
+  Earlier global-allocation and history variants remain research-only because
+  their improvements did not survive the separate holdouts recorded above.

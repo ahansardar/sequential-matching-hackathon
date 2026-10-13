@@ -1,0 +1,99 @@
+{
+  "schema_version": "round2-release-1",
+  "team": "LuminaX",
+  "release_ref": "round2-final-v1",
+  "submitted_method": "adaptive_greedy",
+  "public_evidence": {
+    "seeds": [
+      101,
+      102,
+      103
+    ],
+    "variants": [
+      "development",
+      "sparse",
+      "cold_start",
+      "delayed",
+      "shift",
+      "drift"
+    ],
+    "episodes_per_method": 18,
+    "method_count": 5
+  },
+  "files": {
+    "policy.py": {
+      "sha256": "1cdca70ec263bbe4e9a5566a1203502f52973a56c3476d050af2e3041b2c02ae",
+      "bytes": 1912
+    },
+    "adaptive.py": {
+      "sha256": "897fee1e4a7afdb3adb7028fa4fa56950298756115b98a1d3e274370c5c56b57",
+      "bytes": 17052
+    },
+    "Dockerfile": {
+      "sha256": "f40c5f9849dba8adae55e33ce582010358efed308ba358dd3c8dd47a69dc1bd1",
+      "bytes": 247
+    },
+    "requirements.txt": {
+      "sha256": "d68fe28a7bb7e3f862d47fb9725b1a05a88998e7f523d9a335b1621b54da0aef",
+      "bytes": 83
+    },
+    "ROUND2_SUBMISSION.md": {
+      "sha256": "8e0c8a3b207086987da727685a4645ee6113ffedd9a8c282359acc10db3b779d",
+      "bytes": 13680
+    },
+    "output/pdf/LuminaX_Round2_Final_Report.pdf": {
+      "sha256": "8ba8613d116ab6bcd3b2a7b6857e6f79b89780418851593694f6903e7cd87994",
+      "bytes": 20442
+    },
+    "results/round2_summary.json": {
+      "sha256": "d9614a6e16a001932bcec39a3dc45780924789ea6622b18c22befcebf69655f8",
+      "bytes": 19399
+    },
+    "results/round2_adaptive_greedy_101_103_all.json": {
+      "sha256": "a815504faa74e3fd465a6c9449a9bc37a119c9644aefa50159d76dd44a2acfac",
+      "bytes": 32121
+    },
+    "results/round2_greedy_101_103_all.json": {
+      "sha256": "6a313faa3a1bd8dc07c7a41cefc7a3a88cde8fe0d95a4328f14eaa1d5e36cfa4",
+      "bytes": 32213
+    },
+    "results/round2_no_asks_101_103_all.json": {
+      "sha256": "475d4783644d1a71f6a79c751f27fc2bd04d1f630c7ff93da11594da981423a3",
+      "bytes": 22798
+    },
+    "results/round2_random_assembled_101_103_all.json": {
+      "sha256": "3b2364291035e1449683ab4a4849922fc8e9a47a5d1e0a7d0c967c6c74938487",
+      "bytes": 33482
+    },
+    "results/round2_random_attempt1_timeout.json": {
+      "sha256": "049ee30ccb7b007047dceb56b6bc07f223ab316472da9647fcbd7726e5bcab42",
+      "bytes": 28955
+    },
+    "results/round2_random_attempt2_timeout.json": {
+      "sha256": "fbc70892cecb76e00be24223f3778d9855e533b85956d5dbefa0579020c35c9d",
+      "bytes": 28896
+    },
+    "results/round2_input_order_ablation_101_103_all.json": {
+      "sha256": "18fd94ec3642de7f6a47d5d13ae4d3b89abb3cb12ab942ce26dc112a48603f8b",
+      "bytes": 32219
+    },
+    "results/container_check.json": {
+      "sha256": "3fbd92e074b0db13a0506965633d099491a66b74bf8b03987e8bee7ee15d7cc3",
+      "bytes": 2642
+    },
+    "LUMINAX_LICENSE.md": {
+      "sha256": "3a5f80824bc94d867fe87c303f839a4edf03f3b7e4b2d1a7d1e91bedeaf9c850",
+      "bytes": 1383
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "8dae62119f707923dd17d64dcca505d4b8c0b76173fd9c6311a3f720918bc979",
+      "bytes": 1196
+    }
+  },
+  "verification": {
+    "unit_tests": 118,
+    "public_data_files": 71,
+    "container_episode_valid": true,
+    "container_maximum_policy_call_seconds": 1.245683199999803
+  }
+}

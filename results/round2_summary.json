@@ -1,0 +1,569 @@
+{
+  "schema_version": "round2-summary-1",
+  "team": "LuminaX",
+  "submitted_method": "adaptive_greedy",
+  "evidence_scope": {
+    "source": "public synthetic simulator",
+    "seeds": [
+      101,
+      102,
+      103
+    ],
+    "variants": [
+      "development",
+      "sparse",
+      "cold_start",
+      "delayed",
+      "shift",
+      "drift"
+    ],
+    "episodes_per_method": 18,
+    "scenario_weighting": "equal mean across six scenario families",
+    "inference_random_seed": null
+  },
+  "methods": {
+    "adaptive_greedy": {
+      "result_file": "results/round2_adaptive_greedy_101_103_all.json",
+      "sha256": "a815504faa74e3fd465a6c9449a9bc37a119c9644aefa50159d76dd44a2acfac",
+      "execution_mode": "trusted_local",
+      "summary": {
+        "eligible": true,
+        "primary_score": 0.4444444444444444,
+        "scenario_means": {
+          "cold_start": {
+            "msmi_per_100_arrived_members": 0.6666666666666666,
+            "coverage": 0.3616666666666667,
+            "mutual_acceptances_per_100": 5.333333333333333,
+            "ask_cost": 244,
+            "inference_seconds": 21.43136199998844
+          },
+          "delayed": {
+            "msmi_per_100_arrived_members": 0.3333333333333333,
+            "coverage": 0.43,
+            "mutual_acceptances_per_100": 5.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 31.67579953333431
+          },
+          "development": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.42833333333333334,
+            "mutual_acceptances_per_100": 5.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 21.309610433311416
+          },
+          "drift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.42833333333333334,
+            "mutual_acceptances_per_100": 5.5,
+            "ask_cost": 200,
+            "inference_seconds": 41.98155530001046
+          },
+          "shift": {
+            "msmi_per_100_arrived_members": 0.6666666666666666,
+            "coverage": 0.4266666666666667,
+            "mutual_acceptances_per_100": 7.5,
+            "ask_cost": 200,
+            "inference_seconds": 43.13752976664788
+          },
+          "sparse": {
+            "msmi_per_100_arrived_members": 0.0,
+            "coverage": 0.145,
+            "mutual_acceptances_per_100": 1.3333333333333333,
+            "ask_cost": 196,
+            "inference_seconds": 26.739715766692825
+          }
+        },
+        "overall": {
+          "msmi_per_100_arrived_members": 0.4444444444444444,
+          "coverage": 0.37,
+          "mutual_acceptances_per_100": 5.222222222222222,
+          "ask_cost": 206.66666666666666,
+          "inference_seconds": 31.045928799997554
+        },
+        "ranking_key_descending": [
+          0.4444444444444444,
+          0.37,
+          5.222222222222222,
+          -206.66666666666666,
+          -31.045928799997554
+        ]
+      },
+      "operational": {
+        "episodes": 18,
+        "assignments": 1417,
+        "mutual_acceptances": 188,
+        "dates": 152,
+        "mutual_second_meeting_intention": 16,
+        "missing_feedback": 783,
+        "served_members": 1332,
+        "unserved_members": 2268,
+        "first_introduction_wait_days": {
+          "served_member_count": 1332,
+          "median": 5.0,
+          "p90": 16.0,
+          "maximum": 50
+        },
+        "runtime": {
+          "policy_calls": 2160,
+          "total_inference_seconds": 558.826718399956,
+          "maximum_policy_call_seconds": 8.090253400005167
+        }
+      }
+    },
+    "greedy": {
+      "result_file": "results/round2_greedy_101_103_all.json",
+      "sha256": "6a313faa3a1bd8dc07c7a41cefc7a3a88cde8fe0d95a4328f14eaa1d5e36cfa4",
+      "execution_mode": "trusted_local",
+      "summary": {
+        "eligible": true,
+        "primary_score": 0.3888888888888889,
+        "scenario_means": {
+          "cold_start": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.36,
+            "mutual_acceptances_per_100": 4.666666666666667,
+            "ask_cost": 244,
+            "inference_seconds": 18.974053866667116
+          },
+          "delayed": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.43,
+            "mutual_acceptances_per_100": 6.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 16.27042770000014
+          },
+          "development": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.5,
+            "ask_cost": 200,
+            "inference_seconds": 14.280980033333444
+          },
+          "drift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.166666666666667,
+            "ask_cost": 200,
+            "inference_seconds": 16.411519899999842
+          },
+          "shift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.5,
+            "ask_cost": 200,
+            "inference_seconds": 15.82752269999988
+          },
+          "sparse": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.145,
+            "mutual_acceptances_per_100": 2.3333333333333335,
+            "ask_cost": 196,
+            "inference_seconds": 16.673797300000064
+          }
+        },
+        "overall": {
+          "msmi_per_100_arrived_members": 0.3888888888888889,
+          "coverage": 0.3716666666666667,
+          "mutual_acceptances_per_100": 5.5,
+          "ask_cost": 206.66666666666666,
+          "inference_seconds": 16.406383583333415
+        },
+        "ranking_key_descending": [
+          0.3888888888888889,
+          0.3716666666666667,
+          5.5,
+          -206.66666666666666,
+          -16.406383583333415
+        ]
+      },
+      "operational": {
+        "episodes": 18,
+        "assignments": 1437,
+        "mutual_acceptances": 198,
+        "dates": 155,
+        "mutual_second_meeting_intention": 14,
+        "missing_feedback": 819,
+        "served_members": 1338,
+        "unserved_members": 2262,
+        "first_introduction_wait_days": {
+          "served_member_count": 1338,
+          "median": 4.0,
+          "p90": 16.0,
+          "maximum": 51
+        },
+        "runtime": {
+          "policy_calls": 2160,
+          "total_inference_seconds": 295.3149045000015,
+          "maximum_policy_call_seconds": 3.0696507999999767
+        }
+      }
+    },
+    "no_asks": {
+      "result_file": "results/round2_no_asks_101_103_all.json",
+      "sha256": "475d4783644d1a71f6a79c751f27fc2bd04d1f630c7ff93da11594da981423a3",
+      "execution_mode": "trusted_local",
+      "summary": {
+        "eligible": true,
+        "primary_score": 0.1388888888888889,
+        "scenario_means": {
+          "cold_start": {
+            "msmi_per_100_arrived_members": 0.0,
+            "coverage": 0.08,
+            "mutual_acceptances_per_100": 1.1666666666666667,
+            "ask_cost": 0,
+            "inference_seconds": 15.085253466666813
+          },
+          "delayed": {
+            "msmi_per_100_arrived_members": 0.3333333333333333,
+            "coverage": 0.18333333333333335,
+            "mutual_acceptances_per_100": 2.5,
+            "ask_cost": 0,
+            "inference_seconds": 14.954510300000416
+          },
+          "development": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.18333333333333335,
+            "mutual_acceptances_per_100": 2.1666666666666665,
+            "ask_cost": 0,
+            "inference_seconds": 17.81125683333312
+          },
+          "drift": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.18333333333333335,
+            "mutual_acceptances_per_100": 2.1666666666666665,
+            "ask_cost": 0,
+            "inference_seconds": 14.800050500000339
+          },
+          "shift": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.18333333333333335,
+            "mutual_acceptances_per_100": 2.0,
+            "ask_cost": 0,
+            "inference_seconds": 15.066142199999717
+          },
+          "sparse": {
+            "msmi_per_100_arrived_members": 0.0,
+            "coverage": 0.043333333333333335,
+            "mutual_acceptances_per_100": 0.5,
+            "ask_cost": 0,
+            "inference_seconds": 17.383525633333647
+          }
+        },
+        "overall": {
+          "msmi_per_100_arrived_members": 0.1388888888888889,
+          "coverage": 0.14277777777777778,
+          "mutual_acceptances_per_100": 1.75,
+          "ask_cost": 0,
+          "inference_seconds": 15.850123155555675
+        },
+        "ranking_key_descending": [
+          0.1388888888888889,
+          0.14277777777777778,
+          1.75,
+          0,
+          -15.850123155555675
+        ]
+      },
+      "operational": {
+        "episodes": 18,
+        "assignments": 438,
+        "mutual_acceptances": 63,
+        "dates": 48,
+        "mutual_second_meeting_intention": 5,
+        "missing_feedback": 240,
+        "served_members": 514,
+        "unserved_members": 3086,
+        "first_introduction_wait_days": {
+          "served_member_count": 514,
+          "median": 0.0,
+          "p90": 12.699999999999989,
+          "maximum": 53
+        },
+        "runtime": {
+          "policy_calls": 2160,
+          "total_inference_seconds": 285.30221680000216,
+          "maximum_policy_call_seconds": 0.3829601999999568
+        }
+      }
+    },
+    "random": {
+      "result_file": "results/round2_random_assembled_101_103_all.json",
+      "sha256": "3b2364291035e1449683ab4a4849922fc8e9a47a5d1e0a7d0c967c6c74938487",
+      "execution_mode": "trusted_local",
+      "summary": {
+        "eligible": true,
+        "primary_score": 0.2777777777777778,
+        "scenario_means": {
+          "cold_start": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.36333333333333334,
+            "mutual_acceptances_per_100": 4.5,
+            "ask_cost": 244,
+            "inference_seconds": 15.35743743333463
+          },
+          "delayed": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.43833333333333335,
+            "mutual_acceptances_per_100": 6.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 13.971259099999012
+          },
+          "development": {
+            "msmi_per_100_arrived_members": 0.3333333333333333,
+            "coverage": 0.44,
+            "mutual_acceptances_per_100": 6.5,
+            "ask_cost": 200,
+            "inference_seconds": 13.701509266667017
+          },
+          "drift": {
+            "msmi_per_100_arrived_members": 0.3333333333333333,
+            "coverage": 0.44,
+            "mutual_acceptances_per_100": 6.166666666666667,
+            "ask_cost": 200,
+            "inference_seconds": 14.079524300001594
+          },
+          "shift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.43333333333333335,
+            "mutual_acceptances_per_100": 5.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 14.445210233334365
+          },
+          "sparse": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.145,
+            "mutual_acceptances_per_100": 2.1666666666666665,
+            "ask_cost": 196,
+            "inference_seconds": 14.38195260000081
+          }
+        },
+        "overall": {
+          "msmi_per_100_arrived_members": 0.2777777777777778,
+          "coverage": 0.37666666666666665,
+          "mutual_acceptances_per_100": 5.333333333333333,
+          "ask_cost": 206.66666666666666,
+          "inference_seconds": 14.322815488889571
+        },
+        "ranking_key_descending": [
+          0.2777777777777778,
+          0.37666666666666665,
+          5.333333333333333,
+          -206.66666666666666,
+          -14.322815488889571
+        ]
+      },
+      "operational": {
+        "episodes": 18,
+        "assignments": 1449,
+        "mutual_acceptances": 192,
+        "dates": 158,
+        "mutual_second_meeting_intention": 10,
+        "missing_feedback": 754,
+        "served_members": 1356,
+        "unserved_members": 2244,
+        "first_introduction_wait_days": {
+          "served_member_count": 1356,
+          "median": 5.0,
+          "p90": 16.0,
+          "maximum": 58
+        },
+        "runtime": {
+          "policy_calls": 2160,
+          "total_inference_seconds": 257.8106788000123,
+          "maximum_policy_call_seconds": 3.4828121999998984
+        }
+      }
+    },
+    "adaptive_input_order_greedy": {
+      "result_file": "results/round2_input_order_ablation_101_103_all.json",
+      "sha256": "18fd94ec3642de7f6a47d5d13ae4d3b89abb3cb12ab942ce26dc112a48603f8b",
+      "execution_mode": "trusted_local",
+      "summary": {
+        "eligible": true,
+        "primary_score": 0.3888888888888889,
+        "scenario_means": {
+          "cold_start": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.36,
+            "mutual_acceptances_per_100": 4.666666666666667,
+            "ask_cost": 244,
+            "inference_seconds": 15.511325766665777
+          },
+          "delayed": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.43,
+            "mutual_acceptances_per_100": 6.833333333333333,
+            "ask_cost": 200,
+            "inference_seconds": 18.652757866666207
+          },
+          "development": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.5,
+            "ask_cost": 200,
+            "inference_seconds": 15.56143303333306
+          },
+          "drift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.166666666666667,
+            "ask_cost": 200,
+            "inference_seconds": 12.886553333333419
+          },
+          "shift": {
+            "msmi_per_100_arrived_members": 0.5,
+            "coverage": 0.4316666666666667,
+            "mutual_acceptances_per_100": 6.5,
+            "ask_cost": 200,
+            "inference_seconds": 18.756186099999542
+          },
+          "sparse": {
+            "msmi_per_100_arrived_members": 0.16666666666666666,
+            "coverage": 0.145,
+            "mutual_acceptances_per_100": 2.3333333333333335,
+            "ask_cost": 196,
+            "inference_seconds": 13.092519799999764
+          }
+        },
+        "overall": {
+          "msmi_per_100_arrived_members": 0.3888888888888889,
+          "coverage": 0.3716666666666667,
+          "mutual_acceptances_per_100": 5.5,
+          "ask_cost": 206.66666666666666,
+          "inference_seconds": 15.743462649999628
+        },
+        "ranking_key_descending": [
+          0.3888888888888889,
+          0.3716666666666667,
+          5.5,
+          -206.66666666666666,
+          -15.743462649999628
+        ]
+      },
+      "operational": {
+        "episodes": 18,
+        "assignments": 1437,
+        "mutual_acceptances": 198,
+        "dates": 155,
+        "mutual_second_meeting_intention": 14,
+        "missing_feedback": 819,
+        "served_members": 1338,
+        "unserved_members": 2262,
+        "first_introduction_wait_days": {
+          "served_member_count": 1338,
+          "median": 4.0,
+          "p90": 16.0,
+          "maximum": 51
+        },
+        "runtime": {
+          "policy_calls": 2160,
+          "total_inference_seconds": 283.3823276999933,
+          "maximum_policy_call_seconds": 9.698024399999895
+        }
+      }
+    }
+  },
+  "paired_submitted_minus_comparator": {
+    "greedy": {
+      "metric": "msmi_per_100_arrived_members",
+      "paired_episodes": 18,
+      "seed_groups": 3,
+      "variants_per_seed": 6,
+      "mean_primary_delta": 0.05555555555555556,
+      "scenario_mean_deltas": {
+        "cold_start": 0.5,
+        "delayed": -0.16666666666666666,
+        "development": 0.0,
+        "drift": 0.0,
+        "shift": 0.16666666666666666,
+        "sparse": -0.16666666666666666
+      },
+      "bootstrap": {
+        "method": "paired percentile bootstrap clustered by seed",
+        "resampling_unit": "whole seed group with every scenario variant",
+        "scenario_weighting": "equal weight after within-variant seed means",
+        "resamples": 20000,
+        "seed": 1701,
+        "confidence_level": 0.95,
+        "lower": 0.0,
+        "upper": 0.08333333333333333
+      }
+    },
+    "no_asks": {
+      "metric": "msmi_per_100_arrived_members",
+      "paired_episodes": 18,
+      "seed_groups": 3,
+      "variants_per_seed": 6,
+      "mean_primary_delta": 0.3055555555555555,
+      "scenario_mean_deltas": {
+        "cold_start": 0.6666666666666666,
+        "delayed": 0.0,
+        "development": 0.3333333333333333,
+        "drift": 0.3333333333333333,
+        "shift": 0.5,
+        "sparse": 0.0
+      },
+      "bootstrap": {
+        "method": "paired percentile bootstrap clustered by seed",
+        "resampling_unit": "whole seed group with every scenario variant",
+        "scenario_weighting": "equal weight after within-variant seed means",
+        "resamples": 20000,
+        "seed": 1701,
+        "confidence_level": 0.95,
+        "lower": 0.25,
+        "upper": 0.3333333333333333
+      }
+    },
+    "random": {
+      "metric": "msmi_per_100_arrived_members",
+      "paired_episodes": 18,
+      "seed_groups": 3,
+      "variants_per_seed": 6,
+      "mean_primary_delta": 0.16666666666666666,
+      "scenario_mean_deltas": {
+        "cold_start": 0.5,
+        "delayed": 0.16666666666666666,
+        "development": 0.16666666666666666,
+        "drift": 0.16666666666666666,
+        "shift": 0.16666666666666666,
+        "sparse": -0.16666666666666666
+      },
+      "bootstrap": {
+        "method": "paired percentile bootstrap clustered by seed",
+        "resampling_unit": "whole seed group with every scenario variant",
+        "scenario_weighting": "equal weight after within-variant seed means",
+        "resamples": 20000,
+        "seed": 1701,
+        "confidence_level": 0.95,
+        "lower": -0.16666666666666666,
+        "upper": 0.3333333333333333
+      }
+    },
+    "adaptive_input_order_greedy": {
+      "metric": "msmi_per_100_arrived_members",
+      "paired_episodes": 18,
+      "seed_groups": 3,
+      "variants_per_seed": 6,
+      "mean_primary_delta": 0.05555555555555556,
+      "scenario_mean_deltas": {
+        "cold_start": 0.5,
+        "delayed": -0.16666666666666666,
+        "development": 0.0,
+        "drift": 0.0,
+        "shift": 0.16666666666666666,
+        "sparse": -0.16666666666666666
+      },
+      "bootstrap": {
+        "method": "paired percentile bootstrap clustered by seed",
+        "resampling_unit": "whole seed group with every scenario variant",
+        "scenario_weighting": "equal weight after within-variant seed means",
+        "resamples": 20000,
+        "seed": 1701,
+        "confidence_level": 0.95,
+        "lower": 0.0,
+        "upper": 0.08333333333333333
+      }
+    }
+  },
+  "interpretation": "Public results validate the interface and compare methods on declared seeds. They do not estimate or guarantee the private score."
+}
