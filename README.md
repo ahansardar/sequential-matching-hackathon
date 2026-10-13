@@ -15,6 +15,20 @@ and a [submission PDF](output/pdf/LuminaX_Round1_Research_Report.pdf). The
 organiser-feedback response is the [corrected evidence addendum](ROUND1_CORRECTED_ADDENDUM.md)
 with a [PDF copy](output/pdf/LuminaX_Round1_Corrected_Addendum.pdf).
 
+### LuminaX reconsideration release
+
+Use the tagged snapshot below when reviewing or sharing the corrected package.
+The tag, `main` and `ahan-sardar` resolved to the same commit when the release
+was published.
+
+- [Versioned release snapshot](https://github.com/ahansardar/sequential-matching-hackathon/tree/round1-reconsideration-v1)
+- [Corrected addendum](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/ROUND1_CORRECTED_ADDENDUM.md)
+- [Corrected addendum PDF](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf)
+- [Reconsideration email draft](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/RECONSIDERATION_REPLY.md)
+- [Release manifest](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/release_manifest.json)
+- [Independent validator](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/experiments/validate_corrected_addendum.py)
+- [Release audit](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/experiments/closure_audit.py)
+
 ## Start here
 
 1. Read the [final problem statement](PROBLEM_STATEMENT.md) or [download the PDF](docs/PROBLEM_STATEMENT.pdf).

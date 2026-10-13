@@ -11,6 +11,11 @@ closed only as one of:
 
 No item below is pending.
 
+The [release manifest](../release_manifest.json) defines the shared release
+reference. The [release audit](../experiments/closure_audit.py) checks document
+links, report hashes and evidence files. The public review package is the
+[`round1-reconsideration-v1` snapshot](https://github.com/ahansardar/sequential-matching-hackathon/tree/round1-reconsideration-v1).
+
 | # | Concern | State | Closure evidence |
 |---:|---|---|---|
 | 1 | Subgroup uncertainty | fixed | Profile-service and directional-calibration subgroup intervals resample whole seed worlds. |

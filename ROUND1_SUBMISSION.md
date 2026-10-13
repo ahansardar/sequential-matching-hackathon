@@ -1,12 +1,19 @@
 # LuminaX Round 1 research report
 
+> This is the original Round 1 report. The organiser-feedback response and
+> corrected conclusions are in the
+> [versioned reconsideration release](https://github.com/ahansardar/sequential-matching-hackathon/tree/round1-reconsideration-v1),
+> including the [corrected addendum](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/ROUND1_CORRECTED_ADDENDUM.md)
+> and its [PDF](https://github.com/ahansardar/sequential-matching-hackathon/blob/round1-reconsideration-v1/output/pdf/LuminaX_Round1_Corrected_Addendum.pdf).
+
 ## Guarded-history safe-cardinality matching under incomplete and delayed information
 
 | Item | Submission detail |
 |---|---|
 | Team | LuminaX |
 | Members | Ahan Sardar and Enakshee Mondal |
-| Repository | `https://github.com/ahansardar/sequential-matching-hackathon` |
+| Repository | [Current main branch](https://github.com/ahansardar/sequential-matching-hackathon/tree/main) |
+| Corrected release | [`round1-reconsideration-v1`](https://github.com/ahansardar/sequential-matching-hackathon/tree/round1-reconsideration-v1) |
 | Selected policy | Guarded-history safe-cardinality |
 | Policy version | `guarded-history-2.1` |
 | Prepared | 9 October 2026 |
