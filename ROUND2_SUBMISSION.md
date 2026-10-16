@@ -10,7 +10,7 @@
 | Policy entry point | [`policy.py`](policy.py) |
 | Runtime implementation | [`adaptive.py`](adaptive.py) |
 | Result summary | [`results/round2_summary.json`](results/round2_summary.json) |
-| Prepared | 14 October 2026 |
+| Prepared | 16 October 2026 |
 
 ## 1. What we submit
 
@@ -130,6 +130,13 @@ seed and scenario pairs are used for every method.
 The public seed set is a reproducibility block, not an untouched statistical
 holdout. We report all episodes and do not select a favorable subset.
 
+The random-feasible baseline matrix is assembled from valid, non-overlapping
+episodes in two interrupted evaluator runs. A different episode timed out in
+each run while the host was under unrelated CPU contention. Duplicate valid
+episodes produced the same deterministic action hashes. The source attempts,
+assembly command, and assembled file are retained; this is provenance
+recovery, not outcome selection.
+
 ### 5.2 Methods
 
 | Method | Purpose |
@@ -228,7 +235,7 @@ feedback, repeated pairs, mixed pools, refreshed post-ask state, request replay,
 hash-seed changes, dense graphs, payload limits, and action determinism. The
 full register is [`docs/EDGE_CASE_REGISTER.md`](docs/EDGE_CASE_REGISTER.md).
 
-At report freeze, the suite contains 118 tests. The release checks also verify
+At report freeze, the suite contains 125 tests. The release checks also verify
 all 71 public data files, JSON finiteness, the 1 MiB limits, and the 10-second
 per-call boundary.
 
@@ -253,14 +260,26 @@ Run the final checks from the repository root:
 ```text
 python -m unittest -v
 python verify_data.py
-python evaluate.py --seeds 101,102,103 --variants all --output results/final.json
+python evaluate.py --baseline adaptive_greedy --seeds 101,102,103 --variants all --output results/final.json
 python experiments/build_round2_summary.py --output results/round2_summary.json
 docker build -t sequential-policy:submission .
 python evaluate.py --image sequential-policy:submission --seeds 101 --variants development --output results/container_check.json
+python experiments/build_round2_release.py --output round2_release_manifest.json
+python experiments/round2_release_gate.py --commit HEAD --output results/round2_release_gate.json --render-issue tmp/FINAL_SUBMISSION_ISSUE_READY.md
 ```
 
 The full local matrix uses `--baseline` to select each named comparison. The
 exact commands are in [`README.md`](README.md).
+
+The release gate refuses a package with a wrong default-method command,
+incomplete seed-by-variant matrix, invalid episode, result-hash mismatch,
+mutable issue link, private invitation URL, participant names in the issue
+text, unresolved commit token, unpinned container base, changed runtime file
+allowlist, invalid container evidence, or stale manifest hash. The commit token
+cannot be stored as the hash of the commit that contains it; the gate therefore
+renders the final issue only after the assessed commit exists.
+Final validation also requires `round2-final-v2` to point to that exact HEAD
+commit and verifies that every manifested file is present in that snapshot.
 
 ## 9. Provenance and licences
 
@@ -285,6 +304,15 @@ The repository includes the starter [`LICENSE`](LICENSE), the
 - Stable clarification order can change who is served when the budget binds.
 - Sparse feasible graphs can leave many people unserved.
 - Declined hard answers can permanently block an otherwise possible edge.
+- Candidate competition means a locally strong edge can remove endpoints from
+  other feasible edges; the submitted greedy allocator does not claim global
+  optimality.
+- Members arriving near day 59 have little service opportunity before the
+  decision horizon, although follow-up outcomes remain observable afterward.
+- A valid call can exceed the wall-clock limit if the assessment host is
+  severely CPU-starved. The method contains no clock-dependent fallback,
+  because that would break determinism; the measured container evidence is the
+  bounded runtime claim.
 - The policy reports no causal, demographic-parity, or production-safety claim.
 
 These limits are part of the submission, not future-work claims disguised as

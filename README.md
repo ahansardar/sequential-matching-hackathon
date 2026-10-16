@@ -22,7 +22,11 @@ The Round 2 build is documented in the
 policy, all three required baselines, and the focused ablation on identical
 public seeds and scenarios. The
 [release manifest](round2_release_manifest.json) records the file hashes for
-the `round2-final-v1` snapshot.
+the `round2-final-v2` snapshot.
+
+The final release gate requires `round2-final-v2`, the assessed commit and the
+current working release files to agree. Create that tag only after the release
+commit is complete; never retarget an existing release tag.
 
 ### LuminaX reconsideration release
 
@@ -105,7 +109,13 @@ python evaluate.py --baseline no_asks --seeds 101,102,103 --variants all --outpu
 python evaluate.py --baseline random --seeds 101,102,103 --variants all --output results/round2_random_101_103_all.json
 python evaluate.py --baseline adaptive_input_order_greedy --seeds 101,102,103 --variants all --output results/round2_input_order_ablation_101_103_all.json
 python experiments/build_round2_summary.py --output results/round2_summary.json
+python experiments/build_round2_release.py --output round2_release_manifest.json
+python experiments/round2_release_gate.py --commit HEAD --output results/round2_release_gate.json --render-issue tmp/FINAL_SUBMISSION_ISSUE_READY.md
 ```
+
+The last command fails closed if the method command, evidence matrix, hashes,
+container check, manifest, or final issue template disagree. Submit the
+rendered file from `tmp`, not the placeholder-bearing template.
 
 The published random-feasible matrix was assembled from two official evaluator
 runs after unrelated local CPU contention caused a different process-start

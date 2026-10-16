@@ -1,7 +1,7 @@
 {
   "schema_version": "round2-release-1",
   "team": "LuminaX",
-  "release_ref": "round2-final-v1",
+  "release_ref": "round2-final-v2",
   "submitted_method": "adaptive_greedy",
   "public_evidence": {
     "seeds": [
@@ -38,12 +38,40 @@
       "bytes": 83
     },
     "ROUND2_SUBMISSION.md": {
-      "sha256": "8e0c8a3b207086987da727685a4645ee6113ffedd9a8c282359acc10db3b779d",
-      "bytes": 13680
+      "sha256": "4505f7dd0d690fe9fc34185d6267372176d197d705d2bec9738d7be928924634",
+      "bytes": 15593
+    },
+    "README.md": {
+      "sha256": "8c156d9c54d8f1ee89297e6d55e3666ab6dd02348c3fd5284d00ad47986dc2a4",
+      "bytes": 13941
+    },
+    "docs/DECISIONS.md": {
+      "sha256": "5b626edb40afc27183505df93f8cc528fae8366bcd3caa269c97a488781e1a4a",
+      "bytes": 14402
+    },
+    "docs/EDGE_CASE_REGISTER.md": {
+      "sha256": "e682fad669f5d30c52fea8679d297e79e2d0df9c80019244d538267965e18f18",
+      "bytes": 12024
+    },
+    "docs/FINAL_SUBMISSION_ISSUE.md": {
+      "sha256": "28a2f56ff60dfd3f7ed7622b896bb871caa7afb502c4cf5bcd35a91ffc264ba7",
+      "bytes": 4029
+    },
+    "experiments/round2_release_gate.py": {
+      "sha256": "9cba76f7aab8f4d70769d5b2f26a53b3b8811ed3d381baee0f701c7e934909a2",
+      "bytes": 14672
+    },
+    "experiments/build_round2_pdf.py": {
+      "sha256": "03a89554b5bc422489e8f7db3ac199c05505cd058fc2f7bdcc1152e32b34368e",
+      "bytes": 9034
+    },
+    "test_round2_release_gate.py": {
+      "sha256": "7cf0136bad4c3a012222070b06bb5ea4020ce2aa8aeccee3d2fa4f872ba378d7",
+      "bytes": 2962
     },
     "output/pdf/LuminaX_Round2_Final_Report.pdf": {
-      "sha256": "8ba8613d116ab6bcd3b2a7b6857e6f79b89780418851593694f6903e7cd87994",
-      "bytes": 20442
+      "sha256": "28070e92a379245408961dc04ddf91d76ca37bbe0f1216e897a7c328186e0cd8",
+      "bytes": 20408
     },
     "results/round2_summary.json": {
       "sha256": "d9614a6e16a001932bcec39a3dc45780924789ea6622b18c22befcebf69655f8",
@@ -91,7 +119,7 @@
     }
   },
   "verification": {
-    "unit_tests": 118,
+    "unit_tests": 125,
     "public_data_files": 71,
     "container_episode_valid": true,
     "container_maximum_policy_call_seconds": 1.245683199999803
