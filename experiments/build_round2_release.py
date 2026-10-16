@@ -14,6 +14,13 @@ FILES = (
     "Dockerfile",
     "requirements.txt",
     "ROUND2_SUBMISSION.md",
+    "README.md",
+    "docs/DECISIONS.md",
+    "docs/EDGE_CASE_REGISTER.md",
+    "docs/FINAL_SUBMISSION_ISSUE.md",
+    "experiments/round2_release_gate.py",
+    "experiments/build_round2_pdf.py",
+    "test_round2_release_gate.py",
     "output/pdf/LuminaX_Round2_Final_Report.pdf",
     "results/round2_summary.json",
     "results/round2_adaptive_greedy_101_103_all.json",
@@ -75,7 +82,7 @@ def build_manifest() -> dict:
     return {
         "schema_version": "round2-release-1",
         "team": "LuminaX",
-        "release_ref": "round2-final-v1",
+        "release_ref": "round2-final-v2",
         "submitted_method": "adaptive_greedy",
         "public_evidence": {
             "seeds": [101, 102, 103],
@@ -98,7 +105,7 @@ def build_manifest() -> dict:
             for name, path in zip(FILES, paths)
         },
         "verification": {
-            "unit_tests": 118,
+            "unit_tests": 125,
             "public_data_files": 71,
             "container_episode_valid": True,
             "container_maximum_policy_call_seconds": max(

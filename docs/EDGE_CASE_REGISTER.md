@@ -47,6 +47,10 @@ organiser feedback, and the failure paths we can reach in this repository.
 | Non-finite output | Never emit NaN or Infinity. | `allow_nan=False` and response validation. |
 | Protocol noise | Write one JSON object to stdout. | Real-process tests and container evaluation. |
 | Offline execution | Make no network call and require no persistent files. | Standard-library runtime and isolated Docker run. |
+| Star, path or odd-cycle feasible graph | Return a valid matching even when greedy is not maximum-cardinality. | Graph-shape tests; global optimality is not claimed. |
+| Candidate appears in many high-score edges | Use the declared deterministic edge order and never reuse an endpoint. | Candidate-competition invariant and decision log. |
+| Member arrives on the last decision days | Never use future arrivals or invent extra decision days. | Arrival filtering and explicit late-arrival limitation. |
+| Severe host CPU contention | Preserve deterministic actions; do not make the algorithm depend on a wall clock. | Container evidence plus release check; host starvation remains an external runtime risk. |
 
 ## Time and feedback
 
@@ -106,10 +110,30 @@ The public simulator cannot prove performance on private worlds. These checks
 protect validity, reproducibility and honest analysis. They do not guarantee a
 particular private MSMI score or selection decision.
 
+## Release and handoff boundaries
+
+| Case | Required behavior | Protection |
+|---|---|---|
+| Evaluation command silently runs another method | Name `--baseline adaptive_greedy` in every reviewer command. | Release gate scans the report, README and issue text. |
+| One method has a missing, duplicate or invalid episode | Refuse the release. | Exact 3-seed by 6-variant matrix check for all five methods. |
+| Summary points to changed result bytes | Refuse the release. | Canonical SHA-256 parity check. |
+| Markdown, PDF or source changes after manifest generation | Refuse the release until the manifest is rebuilt. | Manifest file hash and byte-count validation. |
+| Issue contains a private invitation URL | Refuse the release. | Explicit `/invitations` check. |
+| Issue exposes participant names unnecessarily | Use only team name and participant count. | Privacy-safe issue-template check. |
+| Issue uses a branch link or unresolved commit token | Render links from one full commit after the commit exists. | Forty-hex commit resolver and immutable-link check. |
+| Commit SHA cannot be embedded in its own commit | Do not pretend a self-referential hash is possible. | Post-commit issue renderer writes the ready text under `tmp`. |
+| Container command or copied runtime files drift | Refuse unexpected runtime files and require the digest-pinned base. | Docker allowlist check. |
+| Container result was local mode or truncated | Require container mode, one valid episode, 120 calls and an action hash. | Release gate container boundary. |
+| Public links work only for a signed-in owner | Test rendered links in a signed-out browser before submission. | Human final gate; cannot be proven by an offline repository test. |
+| Pull request lacks teammate review | Keep release eligible but do not merge until the named reviewer approves. | Human collaboration gate, not a policy-code assertion. |
+| Private score differs from public evidence | Report uncertainty and limitations; never promise a score. | Seed-grouped interval and explicit evidence boundary. |
+
 ## Rerun
 
 ```text
 python -m unittest -v test_edge_cases.py
 python experiments/edge_case_audit.py --output results/edge_case_audit.json
 python experiments/validate_corrected_addendum.py
+python experiments/round2_release_gate.py --preflight
+python experiments/round2_release_gate.py --commit HEAD --render-issue tmp/FINAL_SUBMISSION_ISSUE_READY.md
 ```

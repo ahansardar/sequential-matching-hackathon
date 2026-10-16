@@ -244,3 +244,21 @@ submission. Add new entries; do not rewrite past decisions after results exist.
   Three public seed groups are not enough to claim a repeatable private gain.
   Earlier global-allocation and history variants remain research-only because
   their improvements did not survive the separate holdouts recorded above.
+
+## D-019: Harden the release without changing the frozen method
+
+- **Status:** accepted for the Round 2 v2 release
+- **Date:** 16 October 2026
+- **Decision:** Keep `adaptive_greedy` unchanged. Add a fail-closed release
+  gate, explicit submitted-method commands, privacy-safe issue rendering,
+  exact matrix and hash checks, container-boundary checks, and a new immutable
+  `round2-final-v2` release. Retain the assembled random baseline with its two
+  source attempts and explicit provenance.
+- **Reason:** The valid algorithm behavior did not supply evidence for another
+  policy promotion. The concrete remaining risks were release drift, a command
+  that silently evaluated `greedy`, post-commit SHA handling, and sporadic
+  wall-clock stalls under unrelated host contention. A clock-based fallback
+  would make identical observations produce different actions and still could
+  not run while the process is unscheduled. The release gate removes the
+  preventable packaging failures and the report states the external runtime
+  risk instead of claiming it was eliminated.

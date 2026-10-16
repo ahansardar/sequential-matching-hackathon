@@ -11,6 +11,7 @@ from adaptive import (
     _history_quality,
     _maximum_cardinality,
     _graph_aware_asks,
+    _greedy_pairs,
     _safe_batch,
     _scored_edges,
     decide,
@@ -21,6 +22,20 @@ from kit import HARD, SOFT, Simulator, baseline_asks, baseline_match, eligibilit
 
 
 class AdaptivePolicyTests(unittest.TestCase):
+    def test_submitted_allocator_handles_star_path_and_odd_cycle_graphs(self):
+        graphs = (
+            {("a", "b"): 3.0, ("a", "c"): 2.0, ("a", "d"): 1.0},
+            {("a", "b"): 1.0, ("b", "c"): 9.0, ("c", "d"): 1.0},
+            {("a", "b"): 1.0, ("b", "c"): 1.0, ("a", "c"): 1.0},
+        )
+        for edges in graphs:
+            first = _greedy_pairs(edges)
+            second = _greedy_pairs(dict(reversed(list(edges.items()))))
+            flattened = [member for pair in first for member in pair]
+            self.assertEqual(first, second)
+            self.assertEqual(len(flattened), len(set(flattened)))
+            self.assertTrue(all(pair in edges for pair in first))
+
     def test_blossom_cardinality_matches_bruteforce_on_small_graphs(self):
         def brute(vertices, edge_set):
             if not vertices:

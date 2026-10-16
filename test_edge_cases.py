@@ -71,6 +71,18 @@ def state(members, budget=12):
 
 
 class EdgeCaseTests(unittest.TestCase):
+    def test_last_day_arrivals_use_only_current_observation(self):
+        current = state([
+            complete_member("late_a", arrived_day=59),
+            complete_member("late_b", arrived_day=59),
+        ])
+        current["day"] = 59
+        response = decide(
+            {"phase": "match", "state": current, "memory": None},
+            "adaptive_greedy",
+        )
+        self.assertEqual(response["pairs"], [["late_a", "late_b"]])
+
     def test_member_permutation_cannot_change_default_actions(self):
         members = [complete_member(f"m{index:03d}") for index in range(8)]
         for index, member in enumerate(members[:6]):
