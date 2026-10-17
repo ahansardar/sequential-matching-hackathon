@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -15,15 +16,12 @@ from adaptive import plan_asks, select_pairs  # noqa: E402
 from kit import HARD, SOFT  # noqa: E402
 
 
-RESULT_FILES = {
-    "adaptive": "adaptive_101_103_all.json",
-    "adaptive_always_max": "adaptive_always_max_101_103_all.json",
-    "cavia": "cavia_101_103_all.json",
-    "greedy": "greedy_101_103_all.json",
-    "no_targeted_asks": "cavia_no_targeted_asks_101_103_all.json",
-    "greedy_allocator": "cavia_greedy_101_103_all.json",
-    "no_uncertainty": "cavia_no_uncertainty_101_103_all.json",
-    "no_feedback": "cavia_no_feedback_101_103_all.json",
+METHOD_LABELS = {
+    "adaptive_greedy": "LuminaX submitted policy",
+    "greedy": "Greedy baseline",
+    "no_asks": "No-clarification baseline",
+    "random": "Random-feasible baseline",
+    "adaptive_input_order_greedy": "Ablation · input-order clarification",
 }
 
 
@@ -105,12 +103,18 @@ def build_pool_detail(pool_id, state):
 def load_experiments(results_dir):
     methods = []
     raw_episodes = {}
-    for method_id, filename in RESULT_FILES.items():
-        path = results_dir / filename
-        if not path.exists():
-            continue
+    round2_summary = read_json(results_dir / "round2_summary.json")
+    for method_id, evidence in round2_summary["methods"].items():
+        if method_id not in METHOD_LABELS:
+            raise ValueError(f"No dashboard label for Round 2 method: {method_id}")
+        path = ROOT / evidence["result_file"]
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != evidence["sha256"]:
+            raise ValueError(f"Round 2 result hash mismatch: {path.name}")
         payload = read_json(path)
-        summary = payload["summary"]
+        summary = evidence["summary"]
+        if payload["summary"] != summary:
+            raise ValueError(f"Round 2 result summary mismatch: {path.name}")
         raw_episodes[path.stem] = [
             {key: row.get(key) for key in (
                 "seed", "variant", "valid", "assignments", "mutual_acceptances",
@@ -123,17 +127,8 @@ def load_experiments(results_dir):
         ]
         methods.append({
             "id": method_id,
-            "label": {
-                "adaptive": "Historical guarded-history policy",
-                "adaptive_always_max": "Ablation · always maximum cardinality",
-                "cavia": "CAVIA",
-                "greedy": "Greedy baseline",
-                "no_targeted_asks": "CAVIA · starter asks",
-                "greedy_allocator": "CAVIA · greedy allocator",
-                "no_uncertainty": "CAVIA · no uncertainty",
-                "no_feedback": "CAVIA · no feedback",
-            }[method_id],
-            "source": filename,
+            "label": METHOD_LABELS[method_id],
+            "source": path.name,
             "episodes": len(payload.get("episodes", [])),
             "seeds": sorted({row["seed"] for row in payload.get("episodes", [])}),
             "primary": summary.get("primary_score"),
@@ -156,9 +151,9 @@ def build(output):
     payload = {
         "meta": {
             "title": "Sequential Matching Data Viewer",
-            "release": "1.0.0",
+            "release": "round2-final-v2",
             "policyMode": "adaptive_greedy",
-            "generatedFrom": "observable public snapshots and trusted local experiment outputs",
+            "generatedFrom": "observable public snapshots and frozen Round 2 evidence",
             "synthetic": True,
             "warning": "Synthetic simulator evidence only. Not real people or product performance.",
         },

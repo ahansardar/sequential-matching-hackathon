@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Local viewer for the sequential matching dataset and evaluation outputs.">
+  <meta name="description" content="Viewer for the sequential matching dataset and frozen Round 2 evaluation evidence.">
   <title>Sequential Matching Data Viewer</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,7 +11,7 @@
   <header class="app-header">
     <div>
       <strong>Sequential Matching Data Viewer</strong>
-      <span>Public synthetic data and local evaluation output</span>
+      <span>Public synthetic data and frozen Round 2 evidence</span>
     </div>
   </header>
 
@@ -25,7 +25,7 @@
   <main>
     <section class="view active" id="view-overview">
       <div class="page-heading">
-        <div><h1>Overview</h1><p>A plain view of what data is available and what the latest local runs produced.</p></div>
+        <div><h1>Overview</h1><p>A plain view of the public data and the final Round 2 evaluation.</p></div>
         <div class="notice">All people and outcomes shown here are synthetic.</div>
       </div>
       <div class="summary-grid" id="overview-summary"></div>
@@ -41,7 +41,7 @@
       </section>
 
       <section class="card">
-        <div class="card-heading"><h2>Latest evaluation comparison</h2><span>Matched seeds 101–103, six public scenarios</span></div>
+        <div class="card-heading"><h2>Final Round 2 comparison</h2><span>Matched seeds 101–103, six public scenarios</span></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Run</th><th>Primary score</th><th>Coverage</th><th>Mutual / 100</th><th>Ask cost</th><th>Episodes</th><th>Valid</th></tr></thead>

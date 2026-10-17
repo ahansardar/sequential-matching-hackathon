@@ -1,7 +1,7 @@
 # Sequential Matching Data Viewer
 
-This is a plain, local, dependency-free viewer for inspecting the public
-synthetic dataset, current policy output and saved evaluation results. The
+This is a plain, dependency-free viewer for inspecting the public
+synthetic dataset, current policy output and frozen Round 2 evaluation results. The
 interface is policy-independent: changing the algorithm does not require a new
 visual design.
 
@@ -26,8 +26,9 @@ Then open `http://localhost:8080`.
 
 ## Evidence boundary
 
-The data builder exports only observable public snapshot fields and trusted local
-evaluation results. It does not export simulator truth, hidden preferences,
+The data builder exports only observable public snapshot fields and the result
+files pinned by `results/round2_summary.json`. It verifies each result hash before
+building. It does not export simulator truth, hidden preferences,
 generator seeds or private organiser data.
 
 The interface labels all results as synthetic preliminary evidence. It is a
