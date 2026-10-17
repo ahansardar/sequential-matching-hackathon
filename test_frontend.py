@@ -42,6 +42,16 @@ class DashboardExportTests(unittest.TestCase):
             for pair in pool["selectedPairs"]:
                 self.assertIn(tuple(pair), edge_pairs)
 
+    def test_experiments_match_frozen_round2_summary(self):
+        summary = json.loads(
+            Path("results/round2_summary.json").read_text(encoding="utf-8")
+        )
+        exported = {run["id"]: run for run in self.payload["experiments"]}
+        self.assertEqual(list(exported), list(summary["methods"]))
+        for method_id, evidence in summary["methods"].items():
+            self.assertEqual(exported[method_id]["source"], Path(evidence["result_file"]).name)
+            self.assertEqual(exported[method_id]["primary"], evidence["summary"]["primary_score"])
+
 
 if __name__ == "__main__":
     unittest.main()
