@@ -4,5 +4,6 @@ __pycache__/
 results/
 frontend/data/dashboard.json
 tmp/
+.chart-data-*/
 .env
 .env.*
