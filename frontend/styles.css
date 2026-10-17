@@ -21,7 +21,6 @@ button { cursor: pointer; }
 .app-header div { display: flex; flex-direction: column; }
 .app-header strong { font-size: 17px; }
 .app-header span { color: #d7dee7; font-size: 12px; }
-.app-header .local-label { padding: 4px 8px; color: #fff; border: 1px solid #8090a1; border-radius: 3px; }
 
 .tabs { padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 4px; position: sticky; top: 0; z-index: 10; }
 .tab { padding: 13px 14px 11px; color: var(--muted); background: transparent; border: 0; border-bottom: 3px solid transparent; }
